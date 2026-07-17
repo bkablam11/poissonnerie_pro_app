@@ -1,0 +1,24 @@
+name: flutter_poissonnerie_pro
+description: Logiciel ERP/POS complet et moderne pour la gestion d'une poissonnerie, avec gestion des stocks, achats, pertes, comptabilité et synchronisation.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.4.9
+  riverpod: ^2.4.9
+  intl: ^0.19.0
+  fl_chart: ^0.66.0
+  uuid: ^4.3.3
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true

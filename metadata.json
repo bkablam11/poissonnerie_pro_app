@@ -1,0 +1,6 @@
+{
+  "name": "Poissonnerie Pro",
+  "description": "Logiciel ERP/POS complet et moderne pour la gestion d'une poissonnerie, avec gestion des stocks, achats, pertes, comptabilité et synchronisation en arrière-plan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
