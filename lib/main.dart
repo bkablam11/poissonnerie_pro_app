@@ -20,8 +20,8 @@ void main() async {
   // Initialiser Supabase si les clés sont valides et ne sont pas les valeurs par défaut
   if (supabaseUrl.isNotEmpty &&
       supabaseAnonKey.isNotEmpty &&
-      supabaseUrl != 'https://gszdqyfppznyerogbyme.supabase.co' &&
-      supabaseAnonKey != 'sb_publishable_zSRxoIw54SbJdWb4iiAoXA_DqLAqE14') {
+      supabaseUrl != '' &&
+      supabaseAnonKey != '') {
     try {
       await Supabase.initialize(
         url: supabaseUrl,
@@ -58,9 +58,18 @@ class PoissonnerieApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         textTheme: const TextTheme(
-          displayLarge: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-          headlineMedium: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-          titleLarge: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+          displayLarge: TextStyle(
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B)),
+          headlineMedium: TextStyle(
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B)),
+          titleLarge: TextStyle(
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E293B)),
           bodyLarge: TextStyle(fontFamily: 'Inter', color: Color(0xFF334155)),
           bodyMedium: TextStyle(fontFamily: 'Inter', color: Color(0xFF475569)),
         ),
