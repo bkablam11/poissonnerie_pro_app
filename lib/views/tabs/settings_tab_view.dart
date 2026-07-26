@@ -1343,21 +1343,88 @@ class _SettingsTabViewState extends ConsumerState<SettingsTabView> {
             ),
             const Divider(height: 24),
             const Text(
-              'En réinitialisant les données locales, vous écraserez tous les stocks actuels, toutes vos factures de ventes de poissons, ainsi que les journaux de caisse.',
+              'Gérez ou réinitialisez la base de données locale selon vos besoins de démarrage :',
               style: TextStyle(fontSize: 11, color: Colors.grey),
             ),
             const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Vider la base à zéro ?',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 15)),
+                        ],
+                      ),
+                      content: const Text(
+                        'Attention : Cette action effacera TOUS les produits, stocks, ventes, arrivages et journaux.\n\n'
+                        'Votre base de données sera totalement VIDE (0 stock, 0 ventes) pour vous permettre d’enregistrer physiquement vos vrais achats et stocks réels.',
+                      ),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Annuler')),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade700),
+                          onPressed: () async {
+                            await ref
+                                .read(shopViewModelProvider.notifier)
+                                .resetToEmpty();
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Base de données vidée ! Vous partez de zéro.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          child: const Text('Confirmer le Vidage Vrai Départ',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              icon: const Icon(Icons.cleaning_services_rounded,
+                  size: 16, color: Colors.white),
+              label: const Text(
+                  'Vider Tout & Départ à Zéro (0 Stock / 0 Ventes)',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () {
                 showDialog(
                   context: context,
                   builder: (context) {
                     return AlertDialog(
-                      title: const Text('Confirmer la réinitialisation ?',
+                      title: const Text('Charger les données de Démo ?',
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 15)),
                       content: const Text(
-                          'Toutes les transactions saisies seront écrasées par les données de démonstration d’usine (seed).'),
+                          'Toutes les transactions actuelles seront remplaceées par les exemples de démonstration d’usine (seed).'),
                       actions: [
                         TextButton(
                             onPressed: () => Navigator.pop(context),
@@ -1373,7 +1440,7 @@ class _SettingsTabViewState extends ConsumerState<SettingsTabView> {
                             ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                     content: Text(
-                                        'Base réinitialisée aux valeurs d’usine.')));
+                                        'Base réinitialisée aux données de démonstration.')));
                           },
                           child: const Text('Confirmer',
                               style: TextStyle(color: Colors.white)),
@@ -1383,9 +1450,9 @@ class _SettingsTabViewState extends ConsumerState<SettingsTabView> {
                   },
                 );
               },
-              icon: const Icon(Icons.delete_forever_rounded,
+              icon: const Icon(Icons.restore_rounded,
                   size: 16, color: Colors.pink),
-              label: const Text('Réinitialiser aux Valeurs d’Usine',
+              label: const Text('Recharger les Données de Démo (Exemples)',
                   style: TextStyle(
                       color: Colors.pink,
                       fontSize: 12,

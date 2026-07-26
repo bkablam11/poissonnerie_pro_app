@@ -49,6 +49,10 @@ class ShopViewModel extends StateNotifier<ShopState> {
     _repository.resetToSeed();
   }
 
+  Future<void> resetToEmpty() async {
+    await _repository.resetToEmpty();
+  }
+
   // Products
   void addProduct(Product p) => _repository.addProduct(p);
   void updateProduct(Product p) => _repository.updateProduct(p);

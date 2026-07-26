@@ -76,12 +76,37 @@ class ShopRepository {
   ShopState get currentState => _state;
 
   ShopRepository() {
-    _loadSeedData();
+    _loadEmptyData();
     _loadState(); // Try loading persisted state from local physical DB
   }
 
   void dispose() {
     _stateController.close();
+  }
+
+  void _loadEmptyData() {
+    final defaultSettings = {
+      'shopName': 'Poissonnerie Pro',
+      'address': 'Gros de Bouaké, Côte d’Ivoire',
+      'phone': '+225 07 07 20 33 22',
+      'taxId': 'CC-0123456-B',
+      'currency': 'FCFA',
+      'vatRate': '18',
+      'cashierPin': '1111',
+      'managerPin': '6465',
+      'adminPin': '1007',
+    };
+
+    _state = ShopState(
+      products: [],
+      sales: [],
+      purchases: [],
+      losses: [],
+      contacts: [],
+      ledger: [],
+      settings: defaultSettings,
+    );
+    _stateController.add(_state);
   }
 
   // Load from local storage (SharedPreferences database)
@@ -96,72 +121,69 @@ class ShopRepository {
       final ledgerJson = prefs.getString('shop_ledger');
       final settingsJson = prefs.getString('shop_settings');
 
-      if (productsJson != null || salesJson != null || contactsJson != null) {
-        List<Product> products = _state.products;
-        if (productsJson != null) {
-          final List decoded = jsonDecode(productsJson);
-          products = decoded.map((x) => Product.fromMap(x)).toList();
-        }
-
-        List<Sale> sales = _state.sales;
-        if (salesJson != null) {
-          final List decoded = jsonDecode(salesJson);
-          sales = decoded.map((x) => Sale.fromMap(x)).toList();
-        }
-
-        List<Arrival> purchases = _state.purchases;
-        if (purchasesJson != null) {
-          final List decoded = jsonDecode(purchasesJson);
-          purchases = decoded.map((x) => Arrival.fromMap(x)).toList();
-        }
-
-        List<Loss> losses = _state.losses;
-        if (lossesJson != null) {
-          final List decoded = jsonDecode(lossesJson);
-          losses = decoded.map((x) => Loss.fromMap(x)).toList();
-        }
-
-        List<Contact> contacts = _state.contacts;
-        if (contactsJson != null) {
-          final List decoded = jsonDecode(contactsJson);
-          contacts = decoded.map((x) => Contact.fromMap(x)).toList();
-        }
-
-        List<LedgerEntry> ledger = _state.ledger;
-        if (ledgerJson != null) {
-          final List decoded = jsonDecode(ledgerJson);
-          ledger = decoded.map((x) => LedgerEntry.fromMap(x)).toList();
-        }
-
-        Map<String, String> settings = Map.from(_state.settings);
-        if (settingsJson != null) {
-          final Map<String, dynamic> decoded = jsonDecode(settingsJson);
-          settings = decoded.map((k, v) => MapEntry(k, v.toString()));
-        }
-
-        // Migrate old default demo PINs (2222 and 0000) to user's custom PINs (6465 and 1007)
-        if (settings['managerPin'] == '2222' ||
-            settings['managerPin'] == null) {
-          settings['managerPin'] = '6465';
-        }
-        if (settings['adminPin'] == '0000' || settings['adminPin'] == null) {
-          settings['adminPin'] = '1007';
-        }
-        if (settings['cashierPin'] == null) {
-          settings['cashierPin'] = '1111';
-        }
-
-        _state = ShopState(
-          products: products,
-          sales: sales,
-          purchases: purchases,
-          losses: losses,
-          contacts: contacts,
-          ledger: ledger,
-          settings: settings,
-        );
-        _stateController.add(_state);
+      List<Product> products = [];
+      if (productsJson != null) {
+        final List decoded = jsonDecode(productsJson);
+        products = decoded.map((x) => Product.fromMap(x)).toList();
       }
+
+      List<Sale> sales = [];
+      if (salesJson != null) {
+        final List decoded = jsonDecode(salesJson);
+        sales = decoded.map((x) => Sale.fromMap(x)).toList();
+      }
+
+      List<Arrival> purchases = [];
+      if (purchasesJson != null) {
+        final List decoded = jsonDecode(purchasesJson);
+        purchases = decoded.map((x) => Arrival.fromMap(x)).toList();
+      }
+
+      List<Loss> losses = [];
+      if (lossesJson != null) {
+        final List decoded = jsonDecode(lossesJson);
+        losses = decoded.map((x) => Loss.fromMap(x)).toList();
+      }
+
+      List<Contact> contacts = [];
+      if (contactsJson != null) {
+        final List decoded = jsonDecode(contactsJson);
+        contacts = decoded.map((x) => Contact.fromMap(x)).toList();
+      }
+
+      List<LedgerEntry> ledger = [];
+      if (ledgerJson != null) {
+        final List decoded = jsonDecode(ledgerJson);
+        ledger = decoded.map((x) => LedgerEntry.fromMap(x)).toList();
+      }
+
+      Map<String, String> settings = Map.from(_state.settings);
+      if (settingsJson != null) {
+        final Map<String, dynamic> decoded = jsonDecode(settingsJson);
+        settings = decoded.map((k, v) => MapEntry(k, v.toString()));
+      }
+
+      // Migrate old default demo PINs (2222 and 0000) to user's custom PINs (6465 and 1007)
+      if (settings['managerPin'] == '2222' || settings['managerPin'] == null) {
+        settings['managerPin'] = '6465';
+      }
+      if (settings['adminPin'] == '0000' || settings['adminPin'] == null) {
+        settings['adminPin'] = '1007';
+      }
+      if (settings['cashierPin'] == null) {
+        settings['cashierPin'] = '1111';
+      }
+
+      _state = ShopState(
+        products: products,
+        sales: sales,
+        purchases: purchases,
+        losses: losses,
+        contacts: contacts,
+        ledger: ledger,
+        settings: settings,
+      );
+      _stateController.add(_state);
     } catch (e) {
       print("Error loading persistent state: $e");
     }
@@ -1004,5 +1026,32 @@ class ShopRepository {
       settings: seedSettings,
     );
     _stateController.add(_state);
+    _saveState();
+  }
+
+  Future<void> resetToEmpty() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('shop_products');
+      await prefs.remove('shop_sales');
+      await prefs.remove('shop_purchases');
+      await prefs.remove('shop_losses');
+      await prefs.remove('shop_contacts');
+      await prefs.remove('shop_ledger');
+    } catch (e) {
+      print("Error resetting prefs: $e");
+    }
+
+    _state = ShopState(
+      products: [],
+      sales: [],
+      purchases: [],
+      losses: [],
+      contacts: [],
+      ledger: [],
+      settings: _state.settings,
+    );
+    _stateController.add(_state);
+    await _saveState();
   }
 }

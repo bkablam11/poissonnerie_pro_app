@@ -340,84 +340,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          if (!isDesktop)
-                            Builder(
-                              builder: (context) => IconButton(
-                                icon: const Icon(Icons.menu_rounded),
-                                onPressed: () =>
-                                    Scaffold.of(context).openDrawer(),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            if (!isDesktop)
+                              Builder(
+                                builder: (context) => IconButton(
+                                  icon: const Icon(Icons.menu_rounded),
+                                  onPressed: () =>
+                                      Scaffold.of(context).openDrawer(),
+                                ),
+                              ),
+                            Flexible(
+                              child: Text(
+                                _tabs[_activeTabIdx]['label'],
+                                style: TextStyle(
+                                  fontSize: isDesktop ? 15 : 13.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          Text(
-                            _tabs[_activeTabIdx]['label'],
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Sync Status Badge
-                          if (shopState.pendingCount == 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border:
-                                    Border.all(color: Colors.green.shade100),
+                            const SizedBox(width: 6),
+                            // Sync Status Badge
+                            if (shopState.pendingCount == 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border:
+                                      Border.all(color: Colors.green.shade100),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded,
+                                        size: 10, color: Colors.green),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      isDesktop ? '✓ Sync OK' : 'Sync',
+                                      style: const TextStyle(
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border:
+                                      Border.all(color: Colors.orange.shade100),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const SizedBox(
+                                      width: 8,
+                                      height: 8,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 1.5,
+                                          color: Colors.orange),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      isDesktop
+                                          ? '${shopState.pendingCount} En Attente'
+                                          : '${shopState.pendingCount}',
+                                      style: const TextStyle(
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.orange),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.check_circle_rounded,
-                                      size: 10, color: Colors.green),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    isDesktop ? '✓ Sync OK' : 'Sync',
-                                    style: const TextStyle(
-                                        fontSize: 8.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green),
-                                  ),
-                                ],
-                              ),
-                            )
-                          else
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border:
-                                    Border.all(color: Colors.orange.shade100),
-                              ),
-                              child: Row(
-                                children: [
-                                  const SizedBox(
-                                    width: 8,
-                                    height: 8,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 1.5, color: Colors.orange),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    isDesktop
-                                        ? '${shopState.pendingCount} En Attente'
-                                        : '${shopState.pendingCount}',
-                                    style: const TextStyle(
-                                        fontSize: 8.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.orange),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
 
                       // Right Header action elements
                       Row(
