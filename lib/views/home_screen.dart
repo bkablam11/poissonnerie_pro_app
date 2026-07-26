@@ -30,7 +30,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     {'label': 'Gestion de Stock', 'icon': Icons.inventory_2_rounded},
     {'label': 'Arrivages / Achats', 'icon': Icons.local_shipping_rounded},
     {'label': 'Gestion des Pertes', 'icon': Icons.delete_sweep_rounded},
-    {'label': 'Caisse & Dépenses', 'icon': Icons.account_balance_wallet_rounded},
+    {
+      'label': 'Caisse & Dépenses',
+      'icon': Icons.account_balance_wallet_rounded
+    },
     {'label': 'Compta SYSCOHADA', 'icon': Icons.menu_book_rounded},
     {'label': 'Contacts', 'icon': Icons.people_alt_rounded},
     {'label': 'Paramètres', 'icon': Icons.settings_suggest_rounded},
@@ -39,15 +42,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildActiveTab(int index) {
     switch (index) {
       case 0:
-        return DashboardTabView(onNavigate: (idx) => setState(() => _activeTabIdx = idx));
+        return DashboardTabView(
+            onNavigate: (idx) => setState(() => _activeTabIdx = idx));
       case 1:
-        return PosTabView(onNavigate: (idx) => setState(() => _activeTabIdx = idx));
+        return PosTabView(
+            onNavigate: (idx) => setState(() => _activeTabIdx = idx));
       case 2:
         return const StockTabView();
       case 3:
-        return PurchasesTabView(onNavigate: (idx) => setState(() => _activeTabIdx = idx));
+        return PurchasesTabView(
+            onNavigate: (idx) => setState(() => _activeTabIdx = idx));
       case 4:
-        return LossesTabView(onNavigate: (idx) => setState(() => _activeTabIdx = idx));
+        return LossesTabView(
+            onNavigate: (idx) => setState(() => _activeTabIdx = idx));
       case 5:
         return const CashTabView();
       case 6:
@@ -57,7 +64,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case 8:
         return const SettingsTabView();
       default:
-        return DashboardTabView(onNavigate: (idx) => setState(() => _activeTabIdx = idx));
+        return DashboardTabView(
+            onNavigate: (idx) => setState(() => _activeTabIdx = idx));
     }
   }
 
@@ -120,7 +128,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                shopState.settings['shopName'] ?? 'Poissonnerie Pro',
+                                shopState.settings['shopName'] ??
+                                    'Poissonnerie Pro',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 14,
@@ -149,12 +158,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // Tab Buttons
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 12),
                       itemCount: _tabs.length,
                       itemBuilder: (context, idx) {
                         final isActive = _activeTabIdx == idx;
                         final tab = _tabs[idx];
-                        final isLockedForCashier = activeRole == UserRole.cashier && idx != 1 && idx != 4;
+                        final isLockedForCashier =
+                            activeRole == UserRole.cashier &&
+                                idx != 1 &&
+                                idx != 4;
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2.0),
@@ -163,7 +176,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               if (isLockedForCashier) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('🔒 Section réservée au Gérant (PIN requis).'),
+                                    content: Text(
+                                        '🔒 Section réservée au Gérant et à l\'Administrateur.'),
                                     backgroundColor: Colors.orange,
                                   ),
                                 );
@@ -174,19 +188,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             borderRadius: BorderRadius.circular(16),
                             child: Ink(
                               decoration: BoxDecoration(
-                                color: isActive ? const Color(0xFFFF6B6B) : Colors.transparent,
+                                color: isActive
+                                    ? const Color(0xFFFF6B6B)
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16.0, vertical: 12.0),
                                 child: Row(
                                   children: [
                                     Icon(
-                                      isLockedForCashier ? Icons.lock_outline : tab['icon'],
+                                      isLockedForCashier
+                                          ? Icons.lock_outline
+                                          : tab['icon'],
                                       size: 20,
                                       color: isLockedForCashier
                                           ? Colors.white30
-                                          : (isActive ? Colors.white : Colors.white54),
+                                          : (isActive
+                                              ? Colors.white
+                                              : Colors.white54),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -197,12 +218,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           fontWeight: FontWeight.w600,
                                           color: isLockedForCashier
                                               ? Colors.white30
-                                              : (isActive ? Colors.white : Colors.white70),
+                                              : (isActive
+                                                  ? Colors.white
+                                                  : Colors.white70),
                                         ),
                                       ),
                                     ),
                                     if (isLockedForCashier)
-                                      const Icon(Icons.lock, size: 12, color: Colors.white24),
+                                      const Icon(Icons.lock,
+                                          size: 12, color: Colors.white24),
                                   ],
                                 ),
                               ),
@@ -225,11 +249,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           children: [
                             CircleAvatar(
                               radius: 14,
-                              backgroundColor: const Color(0xFFFF6B6B).withOpacity(0.2),
+                              backgroundColor: activeRole == UserRole.admin
+                                  ? Colors.purple.withOpacity(0.2)
+                                  : (activeRole == UserRole.manager
+                                      ? Colors.blue.withOpacity(0.2)
+                                      : Colors.amber.withOpacity(0.2)),
                               child: Text(
-                                activeRole == UserRole.manager ? 'G' : 'C',
-                                style: const TextStyle(
-                                  color: Color(0xFFFF6B6B),
+                                activeRole == UserRole.admin
+                                    ? 'A'
+                                    : (activeRole == UserRole.manager
+                                        ? 'G'
+                                        : 'C'),
+                                style: TextStyle(
+                                  color: activeRole == UserRole.admin
+                                      ? Colors.purpleAccent
+                                      : (activeRole == UserRole.manager
+                                          ? Colors.lightBlueAccent
+                                          : Colors.amberAccent),
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -240,7 +276,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  activeRole == UserRole.manager ? 'Gérant' : 'Caissier',
+                                  activeRole == UserRole.admin
+                                      ? 'Admin'
+                                      : (activeRole == UserRole.manager
+                                          ? 'Gérant'
+                                          : 'Caissier'),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
@@ -261,17 +301,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.logout_rounded, color: Colors.white54, size: 18),
+                              icon: const Icon(Icons.logout_rounded,
+                                  color: Colors.white54, size: 18),
                               onPressed: () {
-                                ref.read(userRoleProvider.notifier).state = UserRole.none;
+                                ref.read(userRoleProvider.notifier).state =
+                                    UserRole.none;
                               },
                               tooltip: 'Déconnexion',
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.refresh_rounded, color: Colors.white54, size: 18),
-                              onPressed: () => ref.read(shopViewModelProvider.notifier).resetToSeed(),
-                              tooltip: 'Réinitialiser les données',
-                            ),
+                            if (activeRole == UserRole.admin)
+                              IconButton(
+                                icon: const Icon(Icons.refresh_rounded,
+                                    color: Colors.white54, size: 18),
+                                onPressed: () => ref
+                                    .read(shopViewModelProvider.notifier)
+                                    .resetToSeed(),
+                                tooltip: 'Réinitialiser les données',
+                              ),
                           ],
                         ),
                       ],
@@ -289,7 +335,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Container(
                   height: 64,
                   color: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -299,7 +346,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             Builder(
                               builder: (context) => IconButton(
                                 icon: const Icon(Icons.menu_rounded),
-                                onPressed: () => Scaffold.of(context).openDrawer(),
+                                onPressed: () =>
+                                    Scaffold.of(context).openDrawer(),
                               ),
                             ),
                           Text(
@@ -314,42 +362,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           // Sync Status Badge
                           if (shopState.pendingCount == 0)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.green.shade50,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.green.shade100),
+                                border:
+                                    Border.all(color: Colors.green.shade100),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.check_circle_rounded, size: 10, color: Colors.green),
+                                  const Icon(Icons.check_circle_rounded,
+                                      size: 10, color: Colors.green),
                                   const SizedBox(width: 4),
                                   Text(
                                     isDesktop ? '✓ Sync OK' : 'Sync',
-                                    style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.green),
+                                    style: const TextStyle(
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green),
                                   ),
                                 ],
                               ),
                             )
                           else
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.orange.shade50,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.orange.shade100),
+                                border:
+                                    Border.all(color: Colors.orange.shade100),
                               ),
                               child: Row(
                                 children: [
                                   const SizedBox(
                                     width: 8,
                                     height: 8,
-                                    child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.orange),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 1.5, color: Colors.orange),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    isDesktop ? '${shopState.pendingCount} En Attente' : '${shopState.pendingCount}',
-                                    style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Colors.orange),
+                                    isDesktop
+                                        ? '${shopState.pendingCount} En Attente'
+                                        : '${shopState.pendingCount}',
+                                    style: const TextStyle(
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange),
                                   ),
                                 ],
                               ),
@@ -361,21 +423,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Row(
                         children: [
                           GestureDetector(
-                            onTap: () => ref.read(shopViewModelProvider.notifier).toggleOnlineStatus(),
+                            onTap: () => ref
+                                .read(shopViewModelProvider.notifier)
+                                .toggleOnlineStatus(),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: shopState.isOnline ? Colors.green.shade50 : Colors.red.shade50,
+                                color: shopState.isOnline
+                                    ? Colors.green.shade50
+                                    : Colors.red.shade50,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 isDesktop
-                                    ? (shopState.isOnline ? 'En Ligne (Wifi)' : 'Hors-Ligne (Simulé)')
-                                    : (shopState.isOnline ? 'Wifi' : 'Hors-L.'),
+                                    ? (shopState.isOnline
+                                        ? 'En Ligne (Wifi)'
+                                        : 'Mode Hors-Ligne')
+                                    : (shopState.isOnline
+                                        ? 'En Ligne'
+                                        : 'Hors-L.'),
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: shopState.isOnline ? Colors.green : Colors.red,
+                                  color: shopState.isOnline
+                                      ? Colors.green
+                                      : Colors.red,
                                 ),
                               ),
                             ),
@@ -383,20 +456,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           if (isDesktop && _activeTabIdx != 1) ...[
                             const SizedBox(width: 16),
                             ElevatedButton.icon(
-                              onPressed: () => setState(() => _activeTabIdx = 1),
-                              icon: const Icon(Icons.add_shopping_cart, size: 14, color: Colors.white),
-                              label: const Text('Nouvelle Vente', style: TextStyle(fontSize: 11, color: Colors.white)),
+                              onPressed: () =>
+                                  setState(() => _activeTabIdx = 1),
+                              icon: const Icon(Icons.add_shopping_cart,
+                                  size: 14, color: Colors.white),
+                              label: const Text('Nouvelle Vente',
+                                  style: TextStyle(
+                                      fontSize: 11, color: Colors.white)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFFF6B6B),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
                           ] else if (!isDesktop && _activeTabIdx != 1) ...[
                             const SizedBox(width: 8),
                             IconButton(
-                              icon: const Icon(Icons.add_shopping_cart, size: 18, color: Color(0xFFFF6B6B)),
-                              onPressed: () => setState(() => _activeTabIdx = 1),
+                              icon: const Icon(Icons.add_shopping_cart,
+                                  size: 18, color: Color(0xFFFF6B6B)),
+                              onPressed: () =>
+                                  setState(() => _activeTabIdx = 1),
                               tooltip: 'Nouvelle Vente',
                             ),
                           ],
@@ -431,12 +512,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         children: [
                           const Text(
                             'Poissonnerie Pro',
-                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Mode : ${activeRole == UserRole.manager ? "Gérant" : "Caissier"}',
-                            style: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 11, fontWeight: FontWeight.bold),
+                            'Mode : ${activeRole == UserRole.admin ? "Administrateur" : (activeRole == UserRole.manager ? "Gérant" : "Caissier")}',
+                            style: const TextStyle(
+                                color: Color(0xFFFF6B6B),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -448,32 +535,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       itemBuilder: (context, idx) {
                         final isActive = _activeTabIdx == idx;
                         final tab = _tabs[idx];
-                        final isLockedForCashier = activeRole == UserRole.cashier && idx != 1 && idx != 4;
+                        final isLockedForCashier =
+                            activeRole == UserRole.cashier &&
+                                idx != 1 &&
+                                idx != 4;
 
                         return ListTile(
                           leading: Icon(
-                            isLockedForCashier ? Icons.lock_outline : tab['icon'],
+                            isLockedForCashier
+                                ? Icons.lock_outline
+                                : tab['icon'],
                             color: isLockedForCashier
                                 ? Colors.white30
-                                : (isActive ? const Color(0xFFFF6B6B) : Colors.white70),
+                                : (isActive
+                                    ? const Color(0xFFFF6B6B)
+                                    : Colors.white70),
                           ),
                           trailing: isLockedForCashier
-                              ? const Icon(Icons.lock, size: 14, color: Colors.white24)
+                              ? const Icon(Icons.lock,
+                                  size: 14, color: Colors.white24)
                               : null,
                           title: Text(
                             tab['label'],
                             style: TextStyle(
                               color: isLockedForCashier
                                   ? Colors.white30
-                                  : (isActive ? const Color(0xFFFF6B6B) : Colors.white),
-                              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                                  : (isActive
+                                      ? const Color(0xFFFF6B6B)
+                                      : Colors.white),
+                              fontWeight: isActive
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                           onTap: () {
                             if (isLockedForCashier) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('🔒 Section réservée au Gérant (PIN requis).'),
+                                  content: Text(
+                                      '🔒 Section réservée au Gérant (PIN requis).'),
                                   backgroundColor: Colors.orange,
                                 ),
                               );
@@ -488,8 +588,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const Divider(color: Colors.white12, height: 1),
                   ListTile(
-                    leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-                    title: const Text('Déconnexion', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                    leading: const Icon(Icons.logout_rounded,
+                        color: Colors.redAccent),
+                    title: const Text('Déconnexion',
+                        style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold)),
                     onTap: () {
                       ref.read(userRoleProvider.notifier).state = UserRole.none;
                       Navigator.pop(context);

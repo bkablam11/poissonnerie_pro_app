@@ -21,11 +21,16 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
   void _showProductDialog([Product? prod]) {
     final isEdit = prod != null;
     final nameController = TextEditingController(text: isEdit ? prod.name : '');
-    final purchasePriceController = TextEditingController(text: isEdit ? prod.purchasePrice.toStringAsFixed(0) : '3000');
-    final sellingPriceController = TextEditingController(text: isEdit ? prod.sellingPrice.toStringAsFixed(0) : '5000');
-    final stockController = TextEditingController(text: isEdit ? prod.stockKg.toStringAsFixed(1) : '10.0');
-    final minThresholdController = TextEditingController(text: isEdit ? prod.minThresholdKg.toStringAsFixed(1) : '10.0');
-    ProductCategory category = isEdit ? prod.category : ProductCategory.poissonFrais;
+    final purchasePriceController = TextEditingController(
+        text: isEdit ? prod.purchasePrice.toStringAsFixed(0) : '3000');
+    final sellingPriceController = TextEditingController(
+        text: isEdit ? prod.sellingPrice.toStringAsFixed(0) : '5000');
+    final stockController = TextEditingController(
+        text: isEdit ? prod.stockKg.toStringAsFixed(1) : '10.0');
+    final minThresholdController = TextEditingController(
+        text: isEdit ? prod.minThresholdKg.toStringAsFixed(1) : '10.0');
+    ProductCategory category =
+        isEdit ? prod.category : ProductCategory.poissonFrais;
 
     showDialog(
       context: context,
@@ -33,21 +38,32 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(isEdit ? 'Modifier le Produit' : 'Ajouter un Produit au Catalogue', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              title: Text(
+                  isEdit
+                      ? 'Modifier le Produit'
+                      : 'Ajouter un Produit au Catalogue',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Nom du Poisson / Article'),
+                      decoration: const InputDecoration(
+                          labelText: 'Nom du Poisson / Article'),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<ProductCategory>(
                       value: category,
+                      isExpanded: true,
                       decoration: const InputDecoration(labelText: 'Catégorie'),
                       items: ProductCategory.values.map((cat) {
-                        return DropdownMenuItem(value: cat, child: Text(cat.label));
+                        return DropdownMenuItem(
+                          value: cat,
+                          child:
+                              Text(cat.label, overflow: TextOverflow.ellipsis),
+                        );
                       }).toList(),
                       onChanged: (val) {
                         if (val != null) {
@@ -59,13 +75,15 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                     TextField(
                       controller: purchasePriceController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Prix d’Achat Moyen Pondéré (CFA/Paquet)'),
+                      decoration: const InputDecoration(
+                          labelText: 'Prix d’Achat Moyen Pondéré (CFA/Paquet)'),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: sellingPriceController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Prix de Vente Conseillé (CFA/Paquet)'),
+                      decoration: const InputDecoration(
+                          labelText: 'Prix de Vente Conseillé (CFA/Paquet)'),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -74,7 +92,8 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                           child: TextField(
                             controller: stockController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Stock Actuel (Paquets)'),
+                            decoration: const InputDecoration(
+                                labelText: 'Stock Actuel (Paquets)'),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -82,7 +101,8 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                           child: TextField(
                             controller: minThresholdController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Seuil Alerte (Paquets)'),
+                            decoration: const InputDecoration(
+                                labelText: 'Seuil Alerte (Paquets)'),
                           ),
                         ),
                       ],
@@ -96,13 +116,17 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                   child: const Text('Annuler'),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6B6B)),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B6B)),
                   onPressed: () {
                     final name = nameController.text.trim();
-                    final pPrice = double.tryParse(purchasePriceController.text) ?? 0.0;
-                    final sPrice = double.tryParse(sellingPriceController.text) ?? 0.0;
+                    final pPrice =
+                        double.tryParse(purchasePriceController.text) ?? 0.0;
+                    final sPrice =
+                        double.tryParse(sellingPriceController.text) ?? 0.0;
                     final stock = double.tryParse(stockController.text) ?? 0.0;
-                    final minThr = double.tryParse(minThresholdController.text) ?? 10.0;
+                    final minThr =
+                        double.tryParse(minThresholdController.text) ?? 10.0;
 
                     if (name.isEmpty) return;
 
@@ -130,10 +154,14 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                     }
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(isEdit ? 'Produit mis à jour.' : 'Produit enregistré dans le catalogue.')),
+                      SnackBar(
+                          content: Text(isEdit
+                              ? 'Produit mis à jour.'
+                              : 'Produit enregistré dans le catalogue.')),
                     );
                   },
-                  child: Text(isEdit ? 'Enregistrer' : 'Ajouter', style: const TextStyle(color: Colors.white)),
+                  child: Text(isEdit ? 'Enregistrer' : 'Ajouter',
+                      style: const TextStyle(color: Colors.white)),
                 ),
               ],
             );
@@ -149,8 +177,10 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
     final currency = state.settings['currency'] ?? 'FCFA';
 
     final filteredProducts = state.products.where((p) {
-      final matchesSearch = p.name.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory = _selectedCategory == null || p.category == _selectedCategory;
+      final matchesSearch =
+          p.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesCategory =
+          _selectedCategory == null || p.category == _selectedCategory;
       return matchesSearch && matchesCategory;
     }).toList();
 
@@ -172,33 +202,49 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                         TextField(
                           decoration: InputDecoration(
                             isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             hintText: 'Chercher un poisson...',
-                            prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                            prefixIcon:
+                                const Icon(Icons.search_rounded, size: 20),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16)),
                           ),
-                          onChanged: (val) => setState(() => _searchQuery = val),
+                          onChanged: (val) =>
+                              setState(() => _searchQuery = val),
                         ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
                             Expanded(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<ProductCategory>(
                                     value: _selectedCategory,
                                     isExpanded: true,
-                                    hint: const Text('Toutes catégories', style: TextStyle(fontSize: 12)),
+                                    hint: const Text('Toutes catégories',
+                                        style: TextStyle(fontSize: 12)),
                                     items: [
-                                      const DropdownMenuItem(value: null, child: Text('Toutes catégories', style: TextStyle(fontSize: 12))),
-                                      ...ProductCategory.values.map((cat) => DropdownMenuItem(value: cat, child: Text(cat.label, style: const TextStyle(fontSize: 12)))),
+                                      const DropdownMenuItem(
+                                          value: null,
+                                          child: Text('Toutes catégories',
+                                              style: TextStyle(fontSize: 12))),
+                                      ...ProductCategory.values.map((cat) =>
+                                          DropdownMenuItem(
+                                              value: cat,
+                                              child: Text(cat.label,
+                                                  style: const TextStyle(
+                                                      fontSize: 12)))),
                                     ],
-                                    onChanged: (val) => setState(() => _selectedCategory = val),
+                                    onChanged: (val) =>
+                                        setState(() => _selectedCategory = val),
                                   ),
                                 ),
                               ),
@@ -207,12 +253,19 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFFF6B6B),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 12),
                               ),
                               onPressed: () => _showProductDialog(),
-                              icon: const Icon(Icons.add, color: Colors.white, size: 16),
-                              label: const Text('Nouveau', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                              icon: const Icon(Icons.add,
+                                  color: Colors.white, size: 16),
+                              label: const Text('Nouveau',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11)),
                             ),
                           ],
                         ),
@@ -224,34 +277,54 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                           child: TextField(
                             decoration: InputDecoration(
                               isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
                               hintText: 'Chercher un poisson...',
-                              prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                              prefixIcon:
+                                  const Icon(Icons.search_rounded, size: 20),
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16)),
                             ),
-                            onChanged: (val) => setState(() => _searchQuery = val),
+                            onChanged: (val) =>
+                                setState(() => _searchQuery = val),
                           ),
                         ),
                         const SizedBox(width: 12),
                         DropdownButton<ProductCategory>(
                           value: _selectedCategory,
-                          hint: const Text('Toutes catégories', style: TextStyle(fontSize: 12)),
+                          hint: const Text('Toutes catégories',
+                              style: TextStyle(fontSize: 12)),
                           items: [
-                            const DropdownMenuItem(value: null, child: Text('Toutes catégories', style: TextStyle(fontSize: 12))),
-                            ...ProductCategory.values.map((cat) => DropdownMenuItem(value: cat, child: Text(cat.label, style: const TextStyle(fontSize: 12)))),
+                            const DropdownMenuItem(
+                                value: null,
+                                child: Text('Toutes catégories',
+                                    style: TextStyle(fontSize: 12))),
+                            ...ProductCategory.values.map((cat) =>
+                                DropdownMenuItem(
+                                    value: cat,
+                                    child: Text(cat.label,
+                                        style: const TextStyle(fontSize: 12)))),
                           ],
-                          onChanged: (val) => setState(() => _selectedCategory = val),
+                          onChanged: (val) =>
+                              setState(() => _selectedCategory = val),
                         ),
                         const SizedBox(width: 16),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFF6B6B),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                           onPressed: () => _showProductDialog(),
-                          icon: const Icon(Icons.add, color: Colors.white, size: 16),
-                          label: const Text('Nouveau Poisson', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          icon: const Icon(Icons.add,
+                              color: Colors.white, size: 16),
+                          label: const Text('Nouveau Poisson',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12)),
                         )
                       ],
                     ),
@@ -288,40 +361,57 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               p.name,
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFF2E3A4B)),
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13.5,
+                                                  color: Color(0xFF2E3A4B)),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
                                               p.category.label,
-                                              style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600),
+                                              style: TextStyle(
+                                                  fontSize: 10.5,
+                                                  color: Colors.grey.shade600),
                                             ),
                                           ],
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: isOut
                                               ? Colors.red.shade50
-                                              : (isLow ? Colors.orange.shade50 : Colors.green.shade50),
-                                          borderRadius: BorderRadius.circular(12),
+                                              : (isLow
+                                                  ? Colors.orange.shade50
+                                                  : Colors.green.shade50),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         child: Text(
-                                          isOut ? 'RUPTURE' : (isLow ? 'STOCK BAS' : 'DISPO'),
+                                          isOut
+                                              ? 'RUPTURE'
+                                              : (isLow ? 'STOCK BAS' : 'DISPO'),
                                           style: TextStyle(
                                             fontSize: 8.5,
                                             fontWeight: FontWeight.bold,
-                                            color: isOut ? Colors.red : (isLow ? Colors.orange : Colors.green),
+                                            color: isOut
+                                                ? Colors.red
+                                                : (isLow
+                                                    ? Colors.orange
+                                                    : Colors.green),
                                           ),
                                         ),
                                       ),
@@ -329,30 +419,46 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                                   ),
                                   const Divider(height: 16, thickness: 0.5),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          const Text('STOCK ACTUEL', style: TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
+                                          const Text('STOCK ACTUEL',
+                                              style: TextStyle(
+                                                  fontSize: 9,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.bold)),
                                           const SizedBox(height: 2),
                                           Text(
                                             '${p.stockKg.toStringAsFixed(0)} Paquets',
                                             style: TextStyle(
                                               fontSize: 12.5,
                                               fontWeight: FontWeight.bold,
-                                              color: isOut ? Colors.red : (isLow ? Colors.orange : Colors.black),
+                                              color: isOut
+                                                  ? Colors.red
+                                                  : (isLow
+                                                      ? Colors.orange
+                                                      : Colors.black),
                                             ),
                                           ),
                                         ],
                                       ),
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
                                         children: [
-                                          const Text('PAMP (ACHAT)', style: TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
+                                          const Text('PAMP (ACHAT)',
+                                              style: TextStyle(
+                                                  fontSize: 9,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.bold)),
                                           const SizedBox(height: 2),
                                           Text(
-                                            _formatMoney(p.purchasePrice, currency),
+                                            _formatMoney(
+                                                p.purchasePrice, currency),
                                             style: const TextStyle(
                                               fontSize: 12,
                                               fontFamily: 'Courier',
@@ -361,12 +467,18 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                                         ],
                                       ),
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
                                         children: [
-                                          const Text('PRIX VENTE', style: TextStyle(fontSize: 9, color: Colors.grey, fontWeight: FontWeight.bold)),
+                                          const Text('PRIX VENTE',
+                                              style: TextStyle(
+                                                  fontSize: 9,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.bold)),
                                           const SizedBox(height: 2),
                                           Text(
-                                            _formatMoney(p.sellingPrice, currency),
+                                            _formatMoney(
+                                                p.sellingPrice, currency),
                                             style: const TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,
@@ -383,7 +495,10 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 18),
+                                        icon: const Icon(
+                                            Icons.edit_note_rounded,
+                                            color: Colors.blue,
+                                            size: 18),
                                         onPressed: () => _showProductDialog(p),
                                         tooltip: 'Modifier',
                                         constraints: const BoxConstraints(),
@@ -391,10 +506,19 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                                       ),
                                       const SizedBox(width: 12),
                                       IconButton(
-                                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.pink, size: 18),
+                                        icon: const Icon(
+                                            Icons.delete_outline_rounded,
+                                            color: Colors.pink,
+                                            size: 18),
                                         onPressed: () {
-                                          ref.read(shopViewModelProvider.notifier).deleteProduct(p.id);
-                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Produit archivé.')));
+                                          ref
+                                              .read(shopViewModelProvider
+                                                  .notifier)
+                                              .deleteProduct(p.id);
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                                  content: Text(
+                                                      'Produit archivé.')));
                                         },
                                         tooltip: 'Archiver / Supprimer',
                                         constraints: const BoxConstraints(),
@@ -418,13 +542,41 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                             horizontalMargin: 16,
                             columnSpacing: 16,
                             columns: const [
-                              DataColumn(label: Text('POISSON', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              DataColumn(label: Text('CATÉGORIE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              DataColumn(label: Text('STOCK (PAQUETS)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              DataColumn(label: Text('PAMP (CFA/PAQUET)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              DataColumn(label: Text('PRIX VENTE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              DataColumn(label: Text('STATUT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              DataColumn(label: Text('ACTIONS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              DataColumn(
+                                  label: Text('POISSON',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text('CATÉGORIE',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text('STOCK (PAQUETS)',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text('PAMP (CFA/PAQUET)',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text('PRIX VENTE',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text('STATUT',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text('ACTIONS',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
                             ],
                             rows: filteredProducts.map((p) {
                               final isLow = p.isLowStock;
@@ -432,35 +584,61 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
 
                               return DataRow(
                                 cells: [
-                                  DataCell(Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
-                                  DataCell(Text(p.category.label, style: const TextStyle(fontSize: 12))),
+                                  DataCell(Text(p.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12.5))),
+                                  DataCell(Text(p.category.label,
+                                      style: const TextStyle(fontSize: 12))),
                                   DataCell(
                                     Text(
                                       '${p.stockKg.toStringAsFixed(0)} Paquets',
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: isOut ? Colors.red : (isLow ? Colors.orange : Colors.black),
+                                        color: isOut
+                                            ? Colors.red
+                                            : (isLow
+                                                ? Colors.orange
+                                                : Colors.black),
                                       ),
                                     ),
                                   ),
-                                  DataCell(Text(_formatMoney(p.purchasePrice, currency), style: const TextStyle(fontSize: 12, fontFamily: 'Courier'))),
-                                  DataCell(Text(_formatMoney(p.sellingPrice, currency), style: const TextStyle(fontSize: 12, fontFamily: 'Courier', fontWeight: FontWeight.bold))),
+                                  DataCell(Text(
+                                      _formatMoney(p.purchasePrice, currency),
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontFamily: 'Courier'))),
+                                  DataCell(Text(
+                                      _formatMoney(p.sellingPrice, currency),
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontFamily: 'Courier',
+                                          fontWeight: FontWeight.bold))),
                                   DataCell(
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: isOut
                                             ? Colors.red.shade50
-                                            : (isLow ? Colors.orange.shade50 : Colors.green.shade50),
+                                            : (isLow
+                                                ? Colors.orange.shade50
+                                                : Colors.green.shade50),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
-                                        isOut ? 'SÉCURISÉ' : (isLow ? 'STOCKS BAS' : 'DISPO'),
+                                        isOut
+                                            ? 'SÉCURISÉ'
+                                            : (isLow ? 'STOCKS BAS' : 'DISPO'),
                                         style: TextStyle(
                                           fontSize: 9,
                                           fontWeight: FontWeight.bold,
-                                          color: isOut ? Colors.red : (isLow ? Colors.orange : Colors.green),
+                                          color: isOut
+                                              ? Colors.red
+                                              : (isLow
+                                                  ? Colors.orange
+                                                  : Colors.green),
                                         ),
                                       ),
                                     ),
@@ -469,15 +647,28 @@ class _StockTabViewState extends ConsumerState<StockTabView> {
                                     Row(
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 18),
-                                          onPressed: () => _showProductDialog(p),
+                                          icon: const Icon(
+                                              Icons.edit_note_rounded,
+                                              color: Colors.blue,
+                                              size: 18),
+                                          onPressed: () =>
+                                              _showProductDialog(p),
                                           tooltip: 'Modifier',
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.pink, size: 18),
+                                          icon: const Icon(
+                                              Icons.delete_outline_rounded,
+                                              color: Colors.pink,
+                                              size: 18),
                                           onPressed: () {
-                                            ref.read(shopViewModelProvider.notifier).deleteProduct(p.id);
-                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Produit archivé.')));
+                                            ref
+                                                .read(shopViewModelProvider
+                                                    .notifier)
+                                                .deleteProduct(p.id);
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(const SnackBar(
+                                                    content: Text(
+                                                        'Produit archivé.')));
                                           },
                                           tooltip: 'Archiver / Supprimer',
                                         ),

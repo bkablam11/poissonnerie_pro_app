@@ -5,8 +5,9 @@ import '../data/repositories/shop_repository.dart';
 
 enum UserRole {
   none,
-  cashier, // Caissier (Ventes, Pertes)
-  manager, // Gérant (Comptabilité, Paramètres, Stock, Arrivages, etc.)
+  cashier, // Caissier (Ventes / POS, Pertes)
+  manager, // Gérant (Opérations, Stocks, Achats, Compta, Contacts, Profil Magasin)
+  admin, // Administrateur (Gestion Totale, Configuration des PINs, Supabase/API, Inspector, Zone de Danger)
 }
 
 final userRoleProvider = StateProvider<UserRole>((ref) => UserRole.none);
@@ -52,11 +53,15 @@ class ShopViewModel extends StateNotifier<ShopState> {
   void addProduct(Product p) => _repository.addProduct(p);
   void updateProduct(Product p) => _repository.updateProduct(p);
   void deleteProduct(String id) => _repository.deleteProduct(id);
+  void importProducts(List<Product> products, {bool overwrite = false}) =>
+      _repository.importProducts(products, overwrite: overwrite);
 
   // Contacts
   void addContact(Contact c) => _repository.addContact(c);
   void updateContact(Contact c) => _repository.updateContact(c);
   void deleteContact(String id) => _repository.deleteContact(id);
+  void importContacts(List<Contact> contacts, {bool overwrite = false}) =>
+      _repository.importContacts(contacts, overwrite: overwrite);
 
   // Operations
   void addSale({
@@ -121,7 +126,8 @@ class ShopViewModel extends StateNotifier<ShopState> {
 }
 
 // Publish the ViewModel as a Riverpod StateNotifierProvider
-final shopViewModelProvider = StateNotifierProvider<ShopViewModel, ShopState>((ref) {
+final shopViewModelProvider =
+    StateNotifierProvider<ShopViewModel, ShopState>((ref) {
   final repo = ref.watch(shopRepositoryProvider);
   return ShopViewModel(repo);
 });

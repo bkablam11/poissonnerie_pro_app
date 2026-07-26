@@ -9,6 +9,13 @@ import '../../view_models/shop_view_model.dart';
 import '../../data/models/poissonnerie_models.dart';
 import '../../data/repositories/shop_repository.dart';
 
+enum HistoryPeriodFilter {
+  all,
+  today,
+  thisWeek,
+  thisMonth,
+}
+
 class PosTabView extends ConsumerStatefulWidget {
   final Function(int) onNavigate;
 
@@ -34,8 +41,32 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
   // Receipt History and Outflow Tracking state variables
   bool _showHistory = false;
   String _historySearchQuery = '';
+  HistoryPeriodFilter _historyPeriodFilter = HistoryPeriodFilter.all;
   PaymentMode? _historyPaymentFilter;
   Sale? _selectedHistorySale;
+
+  bool _matchesPeriod(DateTime saleDate, HistoryPeriodFilter period) {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+
+    switch (period) {
+      case HistoryPeriodFilter.all:
+        return true;
+      case HistoryPeriodFilter.today:
+        return saleDate.year == now.year &&
+            saleDate.month == now.month &&
+            saleDate.day == now.day;
+      case HistoryPeriodFilter.thisWeek:
+        final monday = todayStart.subtract(Duration(days: now.weekday - 1));
+        final nextMonday = monday.add(const Duration(days: 7));
+        return saleDate
+                .isAfter(monday.subtract(const Duration(milliseconds: 1))) &&
+            saleDate.isBefore(nextMonday);
+      case HistoryPeriodFilter.thisMonth:
+        return saleDate.year == now.year && saleDate.month == now.month;
+    }
+  }
 
   @override
   void initState() {
@@ -58,14 +89,17 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
             Permission.bluetoothConnect,
           ].request();
 
-          final isScanGranted = statuses[Permission.bluetoothScan]?.isGranted ?? false;
-          final isConnectGranted = statuses[Permission.bluetoothConnect]?.isGranted ?? false;
+          final isScanGranted =
+              statuses[Permission.bluetoothScan]?.isGranted ?? false;
+          final isConnectGranted =
+              statuses[Permission.bluetoothConnect]?.isGranted ?? false;
 
           if (!isScanGranted || !isConnectGranted) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text("Veuillez autoriser l'accès aux appareils à proximité dans les paramètres."),
+                  content: Text(
+                      "Veuillez autoriser l'accès aux appareils à proximité dans les paramètres."),
                   backgroundColor: Colors.orange,
                 ),
               );
@@ -79,13 +113,15 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
             Permission.location,
           ].request();
 
-          final isLocationGranted = statuses[Permission.location]?.isGranted ?? false;
+          final isLocationGranted =
+              statuses[Permission.location]?.isGranted ?? false;
 
           if (!isLocationGranted) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text("Veuillez autoriser l'accès à la localisation pour rechercher des imprimantes."),
+                  content: Text(
+                      "Veuillez autoriser l'accès à la localisation pour rechercher des imprimantes."),
                   backgroundColor: Colors.orange,
                 ),
               );
@@ -95,9 +131,11 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
         }
       }
 
-      final bool isBluetoothEnabled = await PrintBluetoothThermal.bluetoothEnabled;
+      final bool isBluetoothEnabled =
+          await PrintBluetoothThermal.bluetoothEnabled;
       if (isBluetoothEnabled) {
-        final List<BluetoothInfo> printers = await PrintBluetoothThermal.pairedBluetooths;
+        final List<BluetoothInfo> printers =
+            await PrintBluetoothThermal.pairedBluetooths;
         setState(() {
           _availablePrinters = printers;
         });
@@ -129,7 +167,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result ? "Connecté à l'imprimante !" : "Échec de la connexion à l'imprimante"),
+            content: Text(result
+                ? "Connecté à l'imprimante !"
+                : "Échec de la connexion à l'imprimante"),
             backgroundColor: result ? Colors.green : Colors.red,
           ),
         );
@@ -182,7 +222,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
         await _connectToPrinter(_printerMacAddress);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Veuillez d'abord connecter votre imprimante Bluetooth")),
+          const SnackBar(
+              content: Text(
+                  "Veuillez d'abord connecter votre imprimante Bluetooth")),
         );
         return;
       }
@@ -196,6 +238,7 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
         final sanitized = _sanitizeFrenchForPrinter(text);
         addBytes(utf8.encode(sanitized));
       }
+
       void addTextLine(String text) {
         addText(text + '\n');
       }
@@ -219,11 +262,13 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
 
       // Ticket Metadata (Left Align)
       addBytes([27, 97, 0]); // Align Left
-      String dateStr = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      String dateStr =
+          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
       addTextLine('TICKET NO: $ticketNumber');
       addTextLine('DATE:      $dateStr');
       addTextLine('CLIENT:    $clientName');
-      addTextLine('REGLEMENT: ${paymentMode == PaymentMode.cash ? "ESPECES (571)" : "BANQUE (521)"}');
+      addTextLine(
+          'REGLEMENT: ${paymentMode == PaymentMode.cash ? "ESPECES (571)" : "BANQUE (521)"}');
       addTextLine('-' * 40);
 
       // Table Header (Bold)
@@ -242,7 +287,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
         String pu = item.unitPrice.toStringAsFixed(0);
         String totalStr = item.subtotal.toStringAsFixed(0);
 
-        String line = name.padRight(19) + qty.padRight(5) + pu.padRight(6) + totalStr.padLeft(10);
+        String line = name.padRight(19) +
+            qty.padRight(5) +
+            pu.padRight(6) +
+            totalStr.padLeft(10);
         addTextLine(line);
       }
       addTextLine('-' * 40);
@@ -285,13 +333,18 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
       if (printStatus) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Ticket imprimé avec succès !"), backgroundColor: Colors.green),
+            const SnackBar(
+                content: Text("Ticket imprimé avec succès !"),
+                backgroundColor: Colors.green),
           );
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Erreur d'impression physique, vérifiez l'imprimante."), backgroundColor: Colors.red),
+            const SnackBar(
+                content: Text(
+                    "Erreur d'impression physique, vérifiez l'imprimante."),
+                backgroundColor: Colors.red),
           );
         }
       }
@@ -319,7 +372,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
     final clientName = sale.customerName ?? 'Client Comptant';
 
     final shopName = state.settings['shopName'] ?? 'Poissonnerie Pro';
-    final address = state.settings['address'] ?? '12 Port de Pêche, Abidjan, Côte d’Ivoire';
+    final address =
+        state.settings['address'] ?? '12 Port de Pêche, Abidjan, Côte d’Ivoire';
     final phone = state.settings['phone'] ?? '+225 07 45 12 34 56';
     final taxId = state.settings['taxId'] ?? 'CC-9876543-A';
     final currency = state.settings['currency'] ?? 'FCFA';
@@ -348,12 +402,16 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
             );
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               title: Row(
                 children: [
-                  const Icon(Icons.receipt_long_rounded, color: Color(0xFFFF6B6B)),
+                  const Icon(Icons.receipt_long_rounded,
+                      color: Color(0xFFFF6B6B)),
                   const SizedBox(width: 8),
-                  const Text('Détails du Reçu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text('Détails du Reçu',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               content: SizedBox(
@@ -365,7 +423,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                     children: [
                       const Text(
                         'CONNEXION IMPRIMANTE BLUETOOTH',
-                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.grey),
+                        style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey),
                       ),
                       const SizedBox(height: 6),
                       Container(
@@ -389,7 +450,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: _isConnected ? Colors.green.shade800 : Colors.red.shade800,
+                                      color: _isConnected
+                                          ? Colors.green.shade800
+                                          : Colors.red.shade800,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -399,7 +462,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                   height: 12,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: _isConnected ? Colors.green : Colors.red,
+                                    color: _isConnected
+                                        ? Colors.green
+                                        : Colors.red,
                                   ),
                                 ),
                               ],
@@ -411,8 +476,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                   backgroundColor: Colors.blueGrey,
                                   foregroundColor: Colors.white,
                                 ),
-                                icon: const Icon(Icons.bluetooth_searching, size: 16),
-                                label: const Text('Rechercher Imprimantes', style: TextStyle(fontSize: 12)),
+                                icon: const Icon(Icons.bluetooth_searching,
+                                    size: 16),
+                                label: const Text('Rechercher Imprimantes',
+                                    style: TextStyle(fontSize: 12)),
                                 onPressed: () async {
                                   await _scanBluetoothPrinters();
                                   setDialogState(() {});
@@ -423,12 +490,16 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                 isExpanded: true,
                                 decoration: const InputDecoration(
                                   isDense: true,
-                                  labelText: "Sélectionner l'imprimante Bluetooth",
+                                  labelText:
+                                      "Sélectionner l'imprimante Bluetooth",
                                   labelStyle: TextStyle(fontSize: 11),
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
                                 ),
-                                value: _printerMacAddress.isEmpty ? null : _printerMacAddress,
+                                value: _printerMacAddress.isEmpty
+                                    ? null
+                                    : _printerMacAddress,
                                 items: _availablePrinters.map((printer) {
                                   return DropdownMenuItem<String>(
                                     value: printer.macAdress,
@@ -452,7 +523,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       const SizedBox(height: 16),
                       const Text(
                         'APERÇU TICKET (LARGEUR 80MM)',
-                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.grey),
+                        style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey),
                       ),
                       const SizedBox(height: 6),
                       Container(
@@ -466,7 +540,11 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                           children: [
                             Text(
                               '-' * 44,
-                              style: TextStyle(color: Colors.grey.shade400, fontFamily: 'monospace', fontSize: 10, height: 1),
+                              style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontFamily: 'monospace',
+                                  fontSize: 10,
+                                  height: 1),
                             ),
                             const SizedBox(height: 8),
                             Text(
@@ -480,7 +558,11 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                             ),
                             Text(
                               '-' * 44,
-                              style: TextStyle(color: Colors.grey.shade400, fontFamily: 'monospace', fontSize: 10, height: 1),
+                              style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontFamily: 'monospace',
+                                  fontSize: 10,
+                                  height: 1),
                             ),
                           ],
                         ),
@@ -490,13 +572,15 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                 ),
               ),
               actionsAlignment: MainAxisAlignment.spaceBetween,
-              actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              actionsPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               actions: [
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Fermer', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Fermer',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
                 Row(
                   children: [
@@ -504,9 +588,12 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       icon: const Icon(Icons.share_rounded, color: Colors.blue),
                       tooltip: 'Partager le ticket',
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: receiptText)).then((_) {
+                        Clipboard.setData(ClipboardData(text: receiptText))
+                            .then((_) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Ticket copié ! Partagez le sur WhatsApp.')),
+                            const SnackBar(
+                                content: Text(
+                                    'Ticket copié ! Partagez le sur WhatsApp.')),
                           );
                         });
                       },
@@ -516,11 +603,15 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6B6B),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
                       ),
                       icon: const Icon(Icons.print, size: 16),
-                      label: const Text('Réimprimer', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      label: const Text('Réimprimer',
+                          style: TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.bold)),
                       onPressed: () async {
                         await _printDirectly(
                           shopName: shopName,
@@ -552,7 +643,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
   void _addToCart(Product prod) {
     if (prod.stockKg <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rupture de Stock! Impossible de vendre.')),
+        const SnackBar(
+            content: Text('Rupture de Stock! Impossible de vendre.')),
       );
       return;
     }
@@ -562,7 +654,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
       final currentQty = _cart[existingIdx].quantityKg;
       if (currentQty + 1 > prod.stockKg) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Quantité maximale atteinte en fonction du stock disponible.')),
+          const SnackBar(
+              content: Text(
+                  'Quantité maximale atteinte en fonction du stock disponible.')),
         );
         return;
       }
@@ -610,7 +704,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
     });
   }
 
-  double get _cartTotal => _cart.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+  double get _cartTotal =>
+      _cart.fold<double>(0.0, (sum, item) => sum + item.subtotal);
 
   void _showReceiptDialog(
     List<SaleItem> soldItems,
@@ -621,16 +716,25 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
   ) {
     final now = DateTime.now();
     final clientName = clientId != null
-        ? (state.contacts.firstWhere((c) => c.id == clientId, orElse: () => Contact(id: '', name: 'Client Comptant', phone: '', type: ContactType.client)).name)
+        ? (state.contacts
+            .firstWhere((c) => c.id == clientId,
+                orElse: () => Contact(
+                    id: '',
+                    name: 'Client Comptant',
+                    phone: '',
+                    type: ContactType.client))
+            .name)
         : 'Client Comptant';
 
     final shopName = state.settings['shopName'] ?? 'Poissonnerie Pro';
-    final address = state.settings['address'] ?? '12 Port de Pêche, Abidjan, Côte d’Ivoire';
+    final address =
+        state.settings['address'] ?? '12 Port de Pêche, Abidjan, Côte d’Ivoire';
     final phone = state.settings['phone'] ?? '+225 07 45 12 34 56';
     final taxId = state.settings['taxId'] ?? 'CC-9876543-A';
     final currency = state.settings['currency'] ?? 'FCFA';
 
-    final String ticketNumber = 'FAC-${now.millisecondsSinceEpoch.toString().substring(5)}';
+    final String ticketNumber =
+        'FAC-${now.millisecondsSinceEpoch.toString().substring(5)}';
 
     double amountReceived = total;
     double change = 0.0;
@@ -666,12 +770,15 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
             );
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               title: Row(
                 children: [
                   const Icon(Icons.print_rounded, color: Color(0xFFFF6B6B)),
                   const SizedBox(width: 8),
-                  const Text('Impression Ticket 80mm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text('Impression Ticket 80mm',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
               content: SizedBox(
@@ -691,12 +798,16 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                            Icon(Icons.check_circle,
+                                color: Colors.green.shade600, size: 20),
                             const SizedBox(width: 8),
                             const Expanded(
                               child: Text(
                                 'Vente enregistrée avec succès !',
-                                style: TextStyle(color: Colors.green, fontSize: 11.5, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -708,7 +819,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       if (paymentMode == PaymentMode.cash) ...[
                         const Text(
                           'ASSISTANT RENDU DE MONNAIE',
-                          style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.grey),
+                          style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey),
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -721,7 +835,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                   labelText: 'Montant Encaissé ($currency)',
                                   labelStyle: const TextStyle(fontSize: 12),
                                   border: const OutlineInputBorder(),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
                                 ),
                                 onChanged: (val) {
                                   final parsed = double.tryParse(val);
@@ -735,7 +850,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                             ),
                             const SizedBox(width: 12),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFF6B6B).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
@@ -743,10 +859,17 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  const Text('A Rendre:', style: TextStyle(fontSize: 9, color: Color(0xFFFF6B6B), fontWeight: FontWeight.bold)),
+                                  const Text('A Rendre:',
+                                      style: TextStyle(
+                                          fontSize: 9,
+                                          color: Color(0xFFFF6B6B),
+                                          fontWeight: FontWeight.bold)),
                                   Text(
                                     _formatMoney(change, currency),
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFFFF6B6B)),
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w900,
+                                        color: Color(0xFFFF6B6B)),
                                   ),
                                 ],
                               ),
@@ -759,7 +882,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       // Printer Connection interface
                       const Text(
                         'CONNEXION IMPRIMANTE BLUETOOTH',
-                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.grey),
+                        style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey),
                       ),
                       const SizedBox(height: 6),
                       Container(
@@ -783,7 +909,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: _isConnected ? Colors.green.shade800 : Colors.red.shade800,
+                                      color: _isConnected
+                                          ? Colors.green.shade800
+                                          : Colors.red.shade800,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -793,7 +921,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                   height: 12,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: _isConnected ? Colors.green : Colors.red,
+                                    color: _isConnected
+                                        ? Colors.green
+                                        : Colors.red,
                                   ),
                                 ),
                               ],
@@ -805,8 +935,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                   backgroundColor: Colors.blueGrey,
                                   foregroundColor: Colors.white,
                                 ),
-                                icon: const Icon(Icons.bluetooth_searching, size: 16),
-                                label: const Text('Rechercher Imprimantes', style: TextStyle(fontSize: 12)),
+                                icon: const Icon(Icons.bluetooth_searching,
+                                    size: 16),
+                                label: const Text('Rechercher Imprimantes',
+                                    style: TextStyle(fontSize: 12)),
                                 onPressed: () async {
                                   await _scanBluetoothPrinters();
                                   setDialogState(() {});
@@ -817,12 +949,16 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                 isExpanded: true,
                                 decoration: const InputDecoration(
                                   isDense: true,
-                                  labelText: "Sélectionner l'imprimante Bluetooth",
+                                  labelText:
+                                      "Sélectionner l'imprimante Bluetooth",
                                   labelStyle: TextStyle(fontSize: 11),
                                   border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
                                 ),
-                                value: _printerMacAddress.isEmpty ? null : _printerMacAddress,
+                                value: _printerMacAddress.isEmpty
+                                    ? null
+                                    : _printerMacAddress,
                                 items: _availablePrinters.map((printer) {
                                   return DropdownMenuItem<String>(
                                     value: printer.macAdress,
@@ -843,9 +979,13 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                             if (_availablePrinters.isNotEmpty) ...[
                               const SizedBox(height: 6),
                               TextButton.icon(
-                                style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                                icon: const Icon(Icons.refresh, size: 16, color: Colors.blueGrey),
-                                label: const Text('Relancer le scan Bluetooth', style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                                style: TextButton.styleFrom(
+                                    visualDensity: VisualDensity.compact),
+                                icon: const Icon(Icons.refresh,
+                                    size: 16, color: Colors.blueGrey),
+                                label: const Text('Relancer le scan Bluetooth',
+                                    style: TextStyle(
+                                        fontSize: 11, color: Colors.blueGrey)),
                                 onPressed: () async {
                                   await _scanBluetoothPrinters();
                                   setDialogState(() {});
@@ -860,7 +1000,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       // Receipts simulator frame
                       const Text(
                         'APERÇU TICKET (LARGEUR 80MM)',
-                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.grey),
+                        style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey),
                       ),
                       const SizedBox(height: 6),
                       Container(
@@ -875,7 +1018,11 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                             // Dotted tear line at the top
                             Text(
                               '-' * 44,
-                              style: TextStyle(color: Colors.grey.shade400, fontFamily: 'monospace', fontSize: 10, height: 1),
+                              style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontFamily: 'monospace',
+                                  fontSize: 10,
+                                  height: 1),
                             ),
                             const SizedBox(height: 8),
                             // Receipt simulated text
@@ -891,7 +1038,11 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                             // Dotted tear line at the bottom
                             Text(
                               '-' * 44,
-                              style: TextStyle(color: Colors.grey.shade400, fontFamily: 'monospace', fontSize: 10, height: 1),
+                              style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontFamily: 'monospace',
+                                  fontSize: 10,
+                                  height: 1),
                             ),
                           ],
                         ),
@@ -908,12 +1059,14 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                         child: const Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.info_outline, color: Colors.amber, size: 16),
+                            Icon(Icons.info_outline,
+                                color: Colors.amber, size: 16),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'Conseil : Connectez votre imprimante 80mm une fois pour imprimer instantanément. Vous pouvez aussi copier le texte pour l\'utiliser dans une application tierce.',
-                                style: TextStyle(fontSize: 9.5, color: Colors.black87),
+                                style: TextStyle(
+                                    fontSize: 9.5, color: Colors.black87),
                               ),
                             ),
                           ],
@@ -924,13 +1077,15 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                 ),
               ),
               actionsAlignment: MainAxisAlignment.spaceBetween,
-              actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              actionsPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               actions: [
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Fermer', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Fermer',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
                 Row(
                   children: [
@@ -938,9 +1093,12 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       icon: const Icon(Icons.share_rounded, color: Colors.blue),
                       tooltip: 'Partager le ticket',
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: receiptText)).then((_) {
+                        Clipboard.setData(ClipboardData(text: receiptText))
+                            .then((_) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Ticket copié ! Partagez le sur WhatsApp / SMS.')),
+                            const SnackBar(
+                                content: Text(
+                                    'Ticket copié ! Partagez le sur WhatsApp / SMS.')),
                           );
                         });
                       },
@@ -950,11 +1108,15 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFF6B6B),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
                       ),
                       icon: const Icon(Icons.print, size: 16),
-                      label: const Text('Imprimer Direct', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      label: const Text('Imprimer Direct',
+                          style: TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.bold)),
                       onPressed: () async {
                         await _printDirectly(
                           shopName: shopName,
@@ -1024,9 +1186,11 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
     sb.writeln(separatorDouble);
 
     sb.writeln(justify('TICKET NO:', ticketNumber));
-    sb.writeln(justify('DATE:', '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'));
+    sb.writeln(justify('DATE:',
+        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'));
     sb.writeln(justify('CLIENT:', clientName));
-    sb.writeln(justify('REGLEMENT:', paymentMode == PaymentMode.cash ? 'ESPECES (571)' : 'BANQUE (521)'));
+    sb.writeln(justify('REGLEMENT:',
+        paymentMode == PaymentMode.cash ? 'ESPECES (571)' : 'BANQUE (521)'));
     sb.writeln(separatorSingle);
 
     // Header of Table
@@ -1043,17 +1207,24 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
       String totalStr = item.subtotal.toStringAsFixed(0);
 
       // Format clean columns: name (19 chars), qty (5 chars), pu (6 chars), total (10 chars)
-      sb.writeln(name.padRight(19) + qty.padRight(5) + pu.padRight(6) + totalStr.padLeft(10));
+      sb.writeln(name.padRight(19) +
+          qty.padRight(5) +
+          pu.padRight(6) +
+          totalStr.padLeft(10));
     }
 
     sb.writeln(separatorSingle);
     sb.writeln(justify('TOTAL À PAYER:', '${_formatMoney(total, currency)}'));
     if (amountReceived > total) {
-      sb.writeln(justify('MONTANT ENCAISSÉ:', '${_formatMoney(amountReceived, currency)}'));
-      sb.writeln(justify('MONNAIE RENDUE:', '${_formatMoney(change, currency)}'));
+      sb.writeln(justify(
+          'MONTANT ENCAISSÉ:', '${_formatMoney(amountReceived, currency)}'));
+      sb.writeln(
+          justify('MONNAIE RENDUE:', '${_formatMoney(change, currency)}'));
     }
     sb.writeln(separatorDouble);
     sb.writeln(center('Merci de votre confiance !'));
+    sb.writeln(center('Les poissons vendus ne sont ni'));
+    sb.writeln(center('repris ni échangés.'));
     sb.writeln(separatorDouble);
 
     return sb.toString();
@@ -1128,7 +1299,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                     Icon(
                       Icons.shopping_cart_outlined,
                       size: 16,
-                      color: !_showHistory ? const Color(0xFFFF6B6B) : Colors.grey.shade600,
+                      color: !_showHistory
+                          ? const Color(0xFFFF6B6B)
+                          : Colors.grey.shade600,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -1136,7 +1309,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: !_showHistory ? const Color(0xFF1E293B) : Colors.grey.shade600,
+                        color: !_showHistory
+                            ? const Color(0xFF1E293B)
+                            : Colors.grey.shade600,
                       ),
                     ),
                   ],
@@ -1169,7 +1344,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                     Icon(
                       Icons.receipt_long_rounded,
                       size: 16,
-                      color: _showHistory ? const Color(0xFFFF6B6B) : Colors.grey.shade600,
+                      color: _showHistory
+                          ? const Color(0xFFFF6B6B)
+                          : Colors.grey.shade600,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -1177,7 +1354,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: _showHistory ? const Color(0xFF1E293B) : Colors.grey.shade600,
+                        color: _showHistory
+                            ? const Color(0xFF1E293B)
+                            : Colors.grey.shade600,
                       ),
                     ),
                   ],
@@ -1197,23 +1376,29 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
 
     // Filtered Products
     final filteredProducts = state.products.where((p) {
-      final matchesSearch = p.name.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory = _selectedCategory == null || p.category == _selectedCategory;
+      final matchesSearch =
+          p.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesCategory =
+          _selectedCategory == null || p.category == _selectedCategory;
       return matchesSearch && matchesCategory;
     }).toList();
 
     // Clients
-    final clients = state.contacts.where((c) => c.type == ContactType.client).toList();
+    final clients =
+        state.contacts.where((c) => c.type == ContactType.client).toList();
 
     // History filtering
     final filteredSales = state.sales.where((sale) {
       final ticketNum = _getTicketNumber(sale).toLowerCase();
       final customer = (sale.customerName ?? '').toLowerCase();
-      final matchesSearch = ticketNum.contains(_historySearchQuery.toLowerCase()) ||
-                            customer.contains(_historySearchQuery.toLowerCase());
-      
-      final matchesPayment = _historyPaymentFilter == null || sale.paymentMode == _historyPaymentFilter;
-      return matchesSearch && matchesPayment;
+      final matchesSearch =
+          ticketNum.contains(_historySearchQuery.toLowerCase()) ||
+              customer.contains(_historySearchQuery.toLowerCase());
+
+      final matchesPeriod = _matchesPeriod(sale.date, _historyPeriodFilter);
+      final matchesPayment = _historyPaymentFilter == null ||
+          sale.paymentMode == _historyPaymentFilter;
+      return matchesSearch && matchesPeriod && matchesPayment;
     }).toList();
 
     double totalHistoryAmount = 0.0;
@@ -1247,7 +1432,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                   TextField(
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       hintText: 'Rechercher un poisson...',
                       prefixIcon: const Icon(Icons.search_rounded),
                       border: OutlineInputBorder(
@@ -1267,7 +1453,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                         ChoiceChip(
                           label: const Text('Tout'),
                           selected: _selectedCategory == null,
-                          onSelected: (_) => setState(() => _selectedCategory = null),
+                          onSelected: (_) =>
+                              setState(() => _selectedCategory = null),
                         ),
                         const SizedBox(width: 8),
                         ...ProductCategory.values.map((cat) {
@@ -1276,7 +1463,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                             child: ChoiceChip(
                               label: Text(cat.label),
                               selected: _selectedCategory == cat,
-                              onSelected: (_) => setState(() => _selectedCategory = cat),
+                              onSelected: (_) =>
+                                  setState(() => _selectedCategory = cat),
                             ),
                           );
                         }),
@@ -1317,15 +1505,25 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                             children: [
                               Text(
                                 p.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, overflow: TextOverflow.ellipsis),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    overflow: TextOverflow.ellipsis),
                               ),
                               const SizedBox(height: 4),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                decoration: BoxDecoration(color: const Color(0xFFFF6B6B).withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                    color: const Color(0xFFFF6B6B)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8)),
                                 child: Text(
                                   p.category.label,
-                                  style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFFFF6B6B)),
+                                  style: const TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFFF6B6B)),
                                 ),
                               ),
                             ],
@@ -1341,7 +1539,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                       fit: BoxFit.scaleDown,
                                       child: Text(
                                         _formatMoney(p.sellingPrice, currency),
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            color: Color(0xFF1E293B)),
                                       ),
                                     ),
                                     Text(
@@ -1349,7 +1550,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.bold,
-                                        color: p.stockKg <= p.minThresholdKg ? Colors.pink : Colors.grey,
+                                        color: p.stockKg <= p.minThresholdKg
+                                            ? Colors.pink
+                                            : Colors.grey,
                                       ),
                                     ),
                                   ],
@@ -1359,7 +1562,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                               CircleAvatar(
                                 radius: 13,
                                 backgroundColor: const Color(0xFFFF6B6B),
-                                child: const Icon(Icons.add, color: Colors.white, size: 13),
+                                child: const Icon(Icons.add,
+                                    color: Colors.white, size: 13),
                               )
                             ],
                           )
@@ -1389,22 +1593,34 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                 children: [
                   if (!isDesktop) ...[
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
-                      onPressed: () => setState(() => _showCartOnMobile = false),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                          size: 16),
+                      onPressed: () =>
+                          setState(() => _showCartOnMobile = false),
                     ),
                     const SizedBox(width: 4),
                   ],
-                  const Icon(Icons.shopping_cart_outlined, color: Color(0xFFFF6B6B), size: 18),
+                  const Icon(Icons.shopping_cart_outlined,
+                      color: Color(0xFFFF6B6B), size: 18),
                   const SizedBox(width: 8),
-                  const Text('Panier de Vente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2E3A4B))),
+                  const Text('Panier de Vente',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFF2E3A4B))),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: const Color(0xFFFF6B6B), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B6B),
+                    borderRadius: BorderRadius.circular(12)),
                 child: Text(
                   '${_cart.length} items',
-                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -1418,9 +1634,12 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.shopping_basket_outlined, size: 48, color: Colors.grey.shade300),
+                      Icon(Icons.shopping_basket_outlined,
+                          size: 48, color: Colors.grey.shade300),
                       const SizedBox(height: 12),
-                      Text('Votre panier est vide', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                      Text('Votre panier est vide',
+                          style: TextStyle(
+                              color: Colors.grey.shade400, fontSize: 12)),
                     ],
                   ),
                 )
@@ -1429,7 +1648,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                   padding: const EdgeInsets.all(12),
                   itemBuilder: (context, idx) {
                     final item = _cart[idx];
-                    final prod = state.products.firstWhere((p) => p.id == item.productId);
+                    final prod = state.products
+                        .firstWhere((p) => p.id == item.productId);
                     return Card(
                       color: Colors.white,
                       child: Padding(
@@ -1439,7 +1659,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                           children: [
                             Text(
                               item.productName,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, overflow: TextOverflow.ellipsis),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11.5,
+                                  overflow: TextOverflow.ellipsis),
                             ),
                             const SizedBox(height: 6),
                             Row(
@@ -1448,22 +1671,31 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                 Row(
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.remove_circle_outline, size: 16),
-                                      onPressed: () => _updateCartQuantity(idx, item.quantityKg - 1, prod.stockKg),
+                                      icon: const Icon(
+                                          Icons.remove_circle_outline,
+                                          size: 16),
+                                      onPressed: () => _updateCartQuantity(idx,
+                                          item.quantityKg - 1, prod.stockKg),
                                     ),
                                     Text(
                                       '${item.quantityKg.toStringAsFixed(0)} Paquets',
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.add_circle_outline, size: 16),
-                                      onPressed: () => _updateCartQuantity(idx, item.quantityKg + 1, prod.stockKg),
+                                      icon: const Icon(Icons.add_circle_outline,
+                                          size: 16),
+                                      onPressed: () => _updateCartQuantity(idx,
+                                          item.quantityKg + 1, prod.stockKg),
                                     ),
                                   ],
                                 ),
                                 Text(
                                   _formatMoney(item.subtotal, currency),
-                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ],
                             )
@@ -1483,26 +1715,34 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Customer Dropdown selection
-              const Text('CLIENT DE LA TRANSACTION', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+              const Text('CLIENT DE LA TRANSACTION',
+                  style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey)),
               const SizedBox(height: 4),
               DropdownButtonFormField<String>(
                 value: _selectedClientId,
                 decoration: const InputDecoration(
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   border: OutlineInputBorder(),
                   fillColor: Colors.white,
                   filled: true,
                 ),
-                hint: const Text('Client Comptant (Anonyme)', style: TextStyle(fontSize: 11)),
+                hint: const Text('Client Comptant (Anonyme)',
+                    style: TextStyle(fontSize: 11)),
                 items: [
                   const DropdownMenuItem<String>(
                     value: null,
-                    child: Text('Client Comptant', style: TextStyle(fontSize: 11)),
+                    child:
+                        Text('Client Comptant', style: TextStyle(fontSize: 11)),
                   ),
                   ...clients.map((c) => DropdownMenuItem<String>(
                         value: c.id,
-                        child: Text(c.name, style: const TextStyle(fontSize: 11)),
+                        child:
+                            Text(c.name, style: const TextStyle(fontSize: 11)),
                       )),
                 ],
                 onChanged: (val) => setState(() => _selectedClientId = val),
@@ -1510,23 +1750,33 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
               const SizedBox(height: 12),
 
               // Payment Mode Toggle Switch
-              const Text('RÈGLEMENT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+              const Text('RÈGLEMENT',
+                  style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey)),
               const SizedBox(height: 6),
               Row(
                 children: [
                   Expanded(
                     child: ChoiceChip(
-                      label: const Text('ESPÈCES (571)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold)),
+                      label: const Text('ESPÈCES (571)',
+                          style: TextStyle(
+                              fontSize: 9.5, fontWeight: FontWeight.bold)),
                       selected: _paymentMode == PaymentMode.cash,
-                      onSelected: (_) => setState(() => _paymentMode = PaymentMode.cash),
+                      onSelected: (_) =>
+                          setState(() => _paymentMode = PaymentMode.cash),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ChoiceChip(
-                      label: const Text('BANQUE (521)', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold)),
+                      label: const Text('BANQUE (521)',
+                          style: TextStyle(
+                              fontSize: 9.5, fontWeight: FontWeight.bold)),
                       selected: _paymentMode == PaymentMode.bank,
-                      onSelected: (_) => setState(() => _paymentMode = PaymentMode.bank),
+                      onSelected: (_) =>
+                          setState(() => _paymentMode = PaymentMode.bank),
                     ),
                   ),
                 ],
@@ -1537,10 +1787,17 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('TOTAL À PAYER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2E3A4B))),
+                  const Text('TOTAL À PAYER',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2E3A4B))),
                   Text(
                     _formatMoney(_cartTotal, currency),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFFFF6B6B)),
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFFF6B6B)),
                   ),
                 ],
               ),
@@ -1553,9 +1810,14 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                   backgroundColor: const Color(0xFFFF6B6B),
                   disabledBackgroundColor: Colors.grey.shade200,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text('Valider & Imprimer Facture', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                child: const Text('Valider & Imprimer Facture',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13)),
               ),
             ],
           ),
@@ -1579,11 +1841,19 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('TOTAL DES VENTES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                        const Text('TOTAL DES VENTES',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey)),
                         const SizedBox(height: 4),
                         Text(
                           _formatMoney(totalHistoryAmount, currency),
-                          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Colors.green, fontFamily: 'Courier'),
+                          style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.green,
+                              fontFamily: 'Courier'),
                         ),
                       ],
                     ),
@@ -1599,11 +1869,19 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('SORTIES PHYSIQUES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                        const Text('SORTIES PHYSIQUES',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey)),
                         const SizedBox(height: 4),
                         Text(
                           '${totalHistoryVolume.toStringAsFixed(1)} Paquets',
-                          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Color(0xFFFF6B6B), fontFamily: 'Courier'),
+                          style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFFF6B6B),
+                              fontFamily: 'Courier'),
                         ),
                       ],
                     ),
@@ -1619,11 +1897,19 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('REÇUS ÉMIS', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                        const Text('REÇUS ÉMIS',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey)),
                         const SizedBox(height: 4),
                         Text(
                           '${filteredSales.length} Reçu(s)',
-                          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Colors.blueGrey, fontFamily: 'Courier'),
+                          style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.blueGrey,
+                              fontFamily: 'Courier'),
                         ),
                       ],
                     ),
@@ -1644,7 +1930,8 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                   TextField(
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                       hintText: 'Rechercher un ticket ou client...',
                       prefixIcon: const Icon(Icons.search_rounded, size: 20),
                       border: OutlineInputBorder(
@@ -1652,32 +1939,106 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                         borderSide: BorderSide(color: Colors.grey.shade200),
                       ),
                     ),
-                    onChanged: (val) => setState(() => _historySearchQuery = val),
+                    onChanged: (val) =>
+                        setState(() => _historySearchQuery = val),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Text('Mode : ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-                      const SizedBox(width: 8),
+                      const Text('Période : ',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              ChoiceChip(
+                                visualDensity: VisualDensity.compact,
+                                label: const Text('Tous',
+                                    style: TextStyle(fontSize: 10)),
+                                selected: _historyPeriodFilter ==
+                                    HistoryPeriodFilter.all,
+                                onSelected: (_) => setState(() =>
+                                    _historyPeriodFilter =
+                                        HistoryPeriodFilter.all),
+                              ),
+                              const SizedBox(width: 6),
+                              ChoiceChip(
+                                visualDensity: VisualDensity.compact,
+                                label: const Text('Aujourd\'hui (Jour)',
+                                    style: TextStyle(fontSize: 10)),
+                                selected: _historyPeriodFilter ==
+                                    HistoryPeriodFilter.today,
+                                onSelected: (_) => setState(() =>
+                                    _historyPeriodFilter =
+                                        HistoryPeriodFilter.today),
+                              ),
+                              const SizedBox(width: 6),
+                              ChoiceChip(
+                                visualDensity: VisualDensity.compact,
+                                label: const Text('Cette Semaine',
+                                    style: TextStyle(fontSize: 10)),
+                                selected: _historyPeriodFilter ==
+                                    HistoryPeriodFilter.thisWeek,
+                                onSelected: (_) => setState(() =>
+                                    _historyPeriodFilter =
+                                        HistoryPeriodFilter.thisWeek),
+                              ),
+                              const SizedBox(width: 6),
+                              ChoiceChip(
+                                visualDensity: VisualDensity.compact,
+                                label: const Text('Ce Mois',
+                                    style: TextStyle(fontSize: 10)),
+                                selected: _historyPeriodFilter ==
+                                    HistoryPeriodFilter.thisMonth,
+                                onSelected: (_) => setState(() =>
+                                    _historyPeriodFilter =
+                                        HistoryPeriodFilter.thisMonth),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Text('Mode : ',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey)),
+                      const SizedBox(width: 16),
                       ChoiceChip(
                         visualDensity: VisualDensity.compact,
-                        label: const Text('Tous', style: TextStyle(fontSize: 10)),
+                        label:
+                            const Text('Tous', style: TextStyle(fontSize: 10)),
                         selected: _historyPaymentFilter == null,
-                        onSelected: (_) => setState(() => _historyPaymentFilter = null),
+                        onSelected: (_) =>
+                            setState(() => _historyPaymentFilter = null),
                       ),
                       const SizedBox(width: 6),
                       ChoiceChip(
                         visualDensity: VisualDensity.compact,
-                        label: const Text('Espèces', style: TextStyle(fontSize: 10)),
+                        label: const Text('Espèces',
+                            style: TextStyle(fontSize: 10)),
                         selected: _historyPaymentFilter == PaymentMode.cash,
-                        onSelected: (_) => setState(() => _historyPaymentFilter = PaymentMode.cash),
+                        onSelected: (_) => setState(
+                            () => _historyPaymentFilter = PaymentMode.cash),
                       ),
                       const SizedBox(width: 6),
                       ChoiceChip(
                         visualDensity: VisualDensity.compact,
-                        label: const Text('Banque', style: TextStyle(fontSize: 10)),
+                        label: const Text('Banque',
+                            style: TextStyle(fontSize: 10)),
                         selected: _historyPaymentFilter == PaymentMode.bank,
-                        onSelected: (_) => setState(() => _historyPaymentFilter = PaymentMode.bank),
+                        onSelected: (_) => setState(
+                            () => _historyPaymentFilter = PaymentMode.bank),
                       ),
                     ],
                   ),
@@ -1694,9 +2055,12 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.history_toggle_off_rounded, size: 48, color: Colors.grey.shade300),
+                        Icon(Icons.history_toggle_off_rounded,
+                            size: 48, color: Colors.grey.shade300),
                         const SizedBox(height: 12),
-                        Text('Aucun ticket trouvé', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                        Text('Aucun ticket trouvé',
+                            style: TextStyle(
+                                color: Colors.grey.shade400, fontSize: 12)),
                       ],
                     ),
                   )
@@ -1707,16 +2071,24 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       final isSelected = _selectedHistorySale?.id == sale.id;
                       final ticketNo = _getTicketNumber(sale);
                       final client = sale.customerName ?? 'Client Comptant';
-                      final dateStr = '${sale.date.day.toString().padLeft(2, '0')}/${sale.date.month.toString().padLeft(2, '0')}/${sale.date.year} ${sale.date.hour.toString().padLeft(2, '0')}:${sale.date.minute.toString().padLeft(2, '0')}';
-                      
-                      final itemsSummary = sale.items.map((it) => '${it.productName} (x${it.quantityKg.toStringAsFixed(0)})').join(', ');
+                      final dateStr =
+                          '${sale.date.day.toString().padLeft(2, '0')}/${sale.date.month.toString().padLeft(2, '0')}/${sale.date.year} ${sale.date.hour.toString().padLeft(2, '0')}:${sale.date.minute.toString().padLeft(2, '0')}';
+
+                      final itemsSummary = sale.items
+                          .map((it) =>
+                              '${it.productName} (x${it.quantityKg.toStringAsFixed(0)})')
+                          .join(', ');
 
                       return Card(
-                        color: isSelected ? const Color(0xFFFF6B6B).withOpacity(0.05) : Colors.white,
+                        color: isSelected
+                            ? const Color(0xFFFF6B6B).withOpacity(0.05)
+                            : Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
-                            color: isSelected ? const Color(0xFFFF6B6B) : Colors.transparent,
+                            color: isSelected
+                                ? const Color(0xFFFF6B6B)
+                                : Colors.transparent,
                             width: 1,
                           ),
                         ),
@@ -1737,30 +2109,44 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(Icons.receipt_long_rounded, size: 16, color: Color(0xFFFF6B6B)),
+                                        const Icon(Icons.receipt_long_rounded,
+                                            size: 16, color: Color(0xFFFF6B6B)),
                                         const SizedBox(width: 6),
                                         Text(
                                           ticketNo,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E293B)),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                              color: Color(0xFF1E293B)),
                                         ),
                                       ],
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: sale.paymentMode == PaymentMode.cash ? Colors.orange.shade50 : Colors.green.shade50,
+                                        color:
+                                            sale.paymentMode == PaymentMode.cash
+                                                ? Colors.orange.shade50
+                                                : Colors.green.shade50,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        sale.paymentMode == PaymentMode.cash ? 'ESPÈCES' : 'BANQUE',
+                                        sale.paymentMode == PaymentMode.cash
+                                            ? 'ESPÈCES'
+                                            : 'BANQUE',
                                         style: TextStyle(
                                           fontSize: 8,
                                           fontWeight: FontWeight.bold,
-                                          color: sale.paymentMode == PaymentMode.cash ? Colors.orange.shade800 : Colors.green.shade800,
+                                          color: sale.paymentMode ==
+                                                  PaymentMode.cash
+                                              ? Colors.orange.shade800
+                                              : Colors.green.shade800,
                                         ),
                                       ),
                                     ),
@@ -1768,25 +2154,35 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                 ),
                                 const SizedBox(height: 6),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Client : $client',
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87),
+                                          style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black87),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           dateStr,
-                                          style: const TextStyle(fontSize: 9.5, color: Colors.grey),
+                                          style: const TextStyle(
+                                              fontSize: 9.5,
+                                              color: Colors.grey),
                                         ),
                                       ],
                                     ),
                                     Text(
                                       _formatMoney(sale.totalAmount, currency),
-                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFFFF6B6B)),
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFFFF6B6B)),
                                     ),
                                   ],
                                 ),
@@ -1795,7 +2191,10 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                   itemsSummary,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey.shade600,
+                                      fontStyle: FontStyle.italic),
                                 ),
                               ],
                             ),
@@ -1817,12 +2216,16 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
           color: const Color(0xFFF8FAFC),
           child: Row(
             children: [
-              const Icon(Icons.receipt_long_rounded, color: Color(0xFFFF6B6B), size: 18),
+              const Icon(Icons.receipt_long_rounded,
+                  color: Color(0xFFFF6B6B), size: 18),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
                   'Aperçu du Ticket',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2E3A4B)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF2E3A4B)),
                 ),
               ),
             ],
@@ -1836,12 +2239,14 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.touch_app_rounded, size: 48, color: Colors.grey.shade300),
+                        Icon(Icons.touch_app_rounded,
+                            size: 48, color: Colors.grey.shade300),
                         const SizedBox(height: 12),
                         Text(
                           'Sélectionnez un reçu dans l\'historique pour l\'afficher et le réimprimer.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+                          style: TextStyle(
+                              color: Colors.grey.shade400, fontSize: 11),
                         ),
                       ],
                     ),
@@ -1853,9 +2258,12 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                     final now = sale.date;
                     final clientName = sale.customerName ?? 'Client Comptant';
 
-                    final shopName = state.settings['shopName'] ?? 'Poissonnerie Pro';
-                    final address = state.settings['address'] ?? '12 Port de Pêche, Abidjan, Côte d’Ivoire';
-                    final phone = state.settings['phone'] ?? '+225 07 45 12 34 56';
+                    final shopName =
+                        state.settings['shopName'] ?? 'Poissonnerie Pro';
+                    final address = state.settings['address'] ??
+                        '12 Port de Pêche, Abidjan, Côte d’Ivoire';
+                    final phone =
+                        state.settings['phone'] ?? '+225 07 45 12 34 56';
                     final taxId = state.settings['taxId'] ?? 'CC-9876543-A';
                     final currency = state.settings['currency'] ?? 'FCFA';
 
@@ -1893,7 +2301,11 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                               children: [
                                 Text(
                                   '-' * 44,
-                                  style: TextStyle(color: Colors.grey.shade400, fontFamily: 'monospace', fontSize: 10, height: 1),
+                                  style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontFamily: 'monospace',
+                                      fontSize: 10,
+                                      height: 1),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
@@ -1907,7 +2319,11 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                 ),
                                 Text(
                                   '-' * 44,
-                                  style: TextStyle(color: Colors.grey.shade400, fontFamily: 'monospace', fontSize: 10, height: 1),
+                                  style: TextStyle(
+                                      color: Colors.grey.shade400,
+                                      fontFamily: 'monospace',
+                                      fontSize: 10,
+                                      height: 1),
                                 ),
                               ],
                             ),
@@ -1918,17 +2334,25 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () {
-                                    Clipboard.setData(ClipboardData(text: receiptText)).then((_) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Ticket copié ! Partagez le sur WhatsApp.')),
+                                    Clipboard.setData(
+                                            ClipboardData(text: receiptText))
+                                        .then((_) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Ticket copié ! Partagez le sur WhatsApp.')),
                                       );
                                     });
                                   },
-                                  icon: const Icon(Icons.share_rounded, size: 14),
-                                  label: const Text('Partager', style: TextStyle(fontSize: 11)),
+                                  icon:
+                                      const Icon(Icons.share_rounded, size: 14),
+                                  label: const Text('Partager',
+                                      style: TextStyle(fontSize: 11)),
                                   style: OutlinedButton.styleFrom(
                                     visualDensity: VisualDensity.compact,
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
                                   ),
                                 ),
                               ),
@@ -1953,12 +2377,16 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                                     );
                                   },
                                   icon: const Icon(Icons.print, size: 14),
-                                  label: const Text('Réimprimer', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  label: const Text('Réimprimer',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold)),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFFF6B6B),
                                     foregroundColor: Colors.white,
                                     visualDensity: VisualDensity.compact,
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
                                   ),
                                 ),
                               ),
@@ -1989,7 +2417,9 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
                       Container(
                         width: 320,
                         color: Colors.white,
-                        child: _showHistory ? selectedReceiptPreviewPanel : cartPanel,
+                        child: _showHistory
+                            ? selectedReceiptPreviewPanel
+                            : cartPanel,
                       ),
                     ],
                   )
@@ -2004,10 +2434,14 @@ class _PosTabViewState extends ConsumerState<PosTabView> {
               onPressed: () => setState(() => _showCartOnMobile = true),
               backgroundColor: const Color(0xFFFF6B6B),
               icon: Badge(
-                label: Text('${_cart.length}', style: const TextStyle(color: Colors.white)),
-                child: const Icon(Icons.shopping_cart_rounded, color: Colors.white),
+                label: Text('${_cart.length}',
+                    style: const TextStyle(color: Colors.white)),
+                child: const Icon(Icons.shopping_cart_rounded,
+                    color: Colors.white),
               ),
-              label: const Text('Panier', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              label: const Text('Panier',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
             )
           : null,
     );

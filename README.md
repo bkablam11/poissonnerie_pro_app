@@ -232,3 +232,25 @@ Gestion des rôles (Authentification) :
     "minThresholdKg": 10.0
   }
 ]
+
+
+Date;Code Compte;Libelle;Debit;Credit;Reference
+2026-07-26;571;"Vente POS réf sale-1785058899389 (Client Comptant)";33000;0;"led-1785058899389-s1"
+2026-07-26;701;"Facture vente POS réf sale-1785058899389";0;33000;"led-1785058899389-s2"
+2026-07-26;571;"Vente POS réf sale-1785058888089 (Client Comptant)";50000;0;"led-1785058888089-s1"
+2026-07-26;701;"Facture vente POS réf sale-1785058888089";0;50000;"led-1785058888089-s2"
+2026-07-26;571;"Vente POS réf sale-1785057983866 (Client Comptant)";18500;0;"led-1785057983866-s1"
+2026-07-26;701;"Facture vente POS réf sale-1785057983866";0;18500;"led-1785057983866-s2"
+2026-07-20;571;"Vente POS réf sale-1784538844154 (Client Comptant)";49500;0;"led-1784538844154-s1"
+2026-07-20;701;"Facture vente POS réf sale-1784538844154";0;49500;"led-1784538844154-s2"
+2026-07-19;571;"Vente POS réf sale-1784503489747 (Client Comptant)";18500;0;"led-1784503489747-s1"
+2026-07-19;701;"Facture vente POS réf sale-1784503489747";0;18500;"led-1784503489747-s2"
+2026-07-19;571;"Vente POS réf sale-1784503433968 (Client Comptant)";30000;0;"led-1784503433968-s1"
+2026-07-19;701;"Facture vente POS réf sale-1784503433968";0;30000;"led-1784503433968-s2"
+2026-07-19;571;"Vente POS réf sale-1784485198261 (Client Comptant)";30000;0;"led-1784485198261-s1"
+2026-07-19;701;"Facture vente POS réf sale-1784485198261";0;30000;"led-1784485198261-s2"
+2026-07-19;571;"Vente POS réf sale-1784449910252 (Client Comptant)";41000;0;"led-1784449910252-s1"
+2026-07-19;701;"Facture vente POS réf sale-1784449910252";0;41000;"led-1784449910252-s2"
+2026-06-19;101;"Apport de capital initial";0;5000000;"led-1"
+2026-06-19;521;"Versement capital Banque";4000000;0;"led-2"
+2026-06-19;571;"Alimentation caisse";1000000;0;"led-3"

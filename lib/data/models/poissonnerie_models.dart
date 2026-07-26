@@ -1,5 +1,3 @@
-import 'package:uuid/uuid.dart';
-
 enum ProductCategory {
   poissonFrais,
   poissonCongele,
@@ -31,7 +29,7 @@ class Product {
   final ProductCategory category;
   final double stockKg;
   final double purchasePrice; // Price in CFA
-  final double sellingPrice;  // Price in CFA
+  final double sellingPrice; // Price in CFA
   final double minThresholdKg;
 
   Product({
@@ -131,11 +129,13 @@ class SaleItem {
 
 enum PaymentMode {
   cash, // Account 571
-  bank  // Account 521 (Mobile Money / Bank)
+  bank // Account 521 (Mobile Money / Bank)
 }
 
 extension PaymentModeExtension on PaymentMode {
-  String get label => this == PaymentMode.cash ? 'Espèces (571)' : 'Banque & Mobile Money (521)';
+  String get label => this == PaymentMode.cash
+      ? 'Espèces (571)'
+      : 'Banque & Mobile Money (521)';
 }
 
 class Sale {
@@ -248,18 +248,14 @@ class Arrival {
       fishName: map['fishName'] ?? '',
       quantityKg: (map['quantityKg'] as num?)?.toDouble() ?? 0.0,
       unitPurchaseCost: (map['unitPurchaseCost'] as num?)?.toDouble() ?? 0.0,
-      suggestedSellingPrice: (map['suggestedSellingPrice'] as num?)?.toDouble() ?? 0.0,
+      suggestedSellingPrice:
+          (map['suggestedSellingPrice'] as num?)?.toDouble() ?? 0.0,
       date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
     );
   }
 }
 
-enum LossReason {
-  perime,
-  avarie,
-  spoliation,
-  surstock
-}
+enum LossReason { perime, avarie, spoliation, surstock }
 
 extension LossReasonExtension on LossReason {
   String get label {
@@ -325,10 +321,7 @@ class Loss {
   }
 }
 
-enum ContactType {
-  client,
-  fournisseur
-}
+enum ContactType { client, fournisseur }
 
 class Contact {
   final String id;
@@ -390,7 +383,8 @@ class Expense {
   final String label;
   final double amount;
   final PaymentMode paymentMode; // Cash (571) or Bank/MoMo (521)
-  final String category; // e.g. "Glace", "Électricité", "Transport", "Emballage"
+  final String
+      category; // e.g. "Glace", "Électricité", "Transport", "Emballage"
   final DateTime date;
 
   Expense({

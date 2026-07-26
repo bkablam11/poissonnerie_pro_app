@@ -20,8 +20,8 @@ void main() async {
   // Initialiser Supabase si les clés sont valides et ne sont pas les valeurs par défaut
   if (supabaseUrl.isNotEmpty &&
       supabaseAnonKey.isNotEmpty &&
-      supabaseUrl != '' &&
-      supabaseAnonKey != '') {
+      supabaseUrl != 'https://VOTRE_PROJET_ID.supabase.co' &&
+      supabaseAnonKey != 'VOTRE_CLE_API_ANONYME') {
     try {
       await Supabase.initialize(
         url: supabaseUrl,
