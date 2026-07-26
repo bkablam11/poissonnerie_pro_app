@@ -1,4 +1,4 @@
-import 'package:flutter/material';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../view_models/shop_view_model.dart';
 import '../../data/models/poissonnerie_models.dart';
@@ -128,136 +128,322 @@ class _ContactsTabViewState extends ConsumerState<ContactsTabView> {
       return matchesSearch && matchesType;
     }).toList();
 
+    final isMobile = MediaQuery.of(context).size.width < 1024;
+
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: EdgeInsets.all(isMobile ? 12.0 : 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Filter Panel & Actions
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        hintText: 'Rechercher un client ou grossiste...',
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onChanged: (val) => setState(() => _searchQuery = val),
+              padding: const EdgeInsets.all(12.0),
+              child: isMobile
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            hintText: 'Rechercher un contact...',
+                            prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          onChanged: (val) => setState(() => _searchQuery = val),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<ContactType>(
+                                    value: _selectedType,
+                                    isExpanded: true,
+                                    hint: const Text('Tous', style: TextStyle(fontSize: 11)),
+                                    items: const [
+                                      DropdownMenuItem(value: null, child: Text('Tous', style: TextStyle(fontSize: 11))),
+                                      DropdownMenuItem(value: ContactType.client, child: Text('Clients', style: TextStyle(fontSize: 11))),
+                                      DropdownMenuItem(value: ContactType.fournisseur, child: Text('Grossistes', style: TextStyle(fontSize: 11))),
+                                    ],
+                                    onChanged: (val) => setState(() => _selectedType = val),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF6B6B),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                              onPressed: () => _showContactDialog(),
+                              icon: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white, size: 16),
+                              label: const Text('Ajouter', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              hintText: 'Rechercher un client ou grossiste...',
+                              prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            onChanged: (val) => setState(() => _searchQuery = val),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        DropdownButton<ContactType>(
+                          value: _selectedType,
+                          hint: const Text('Tous les contacts', style: TextStyle(fontSize: 12)),
+                          items: const [
+                            DropdownMenuItem(value: null, child: Text('Tous les contacts', style: TextStyle(fontSize: 12))),
+                            DropdownMenuItem(value: ContactType.client, child: Text('Clients uniquement', style: TextStyle(fontSize: 12))),
+                            DropdownMenuItem(value: ContactType.fournisseur, child: Text('Fournisseurs uniquement', style: TextStyle(fontSize: 12))),
+                          ],
+                          onChanged: (val) => setState(() => _selectedType = val),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF6B6B),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                          onPressed: () => _showContactDialog(),
+                          icon: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white, size: 16),
+                          label: const Text('Ajouter Contact', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                        )
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  DropdownButton<ContactType>(
-                    value: _selectedType,
-                    hint: const Text('Tous les contacts', style: TextStyle(fontSize: 12)),
-                    items: const [
-                      DropdownMenuItem(value: null, child: Text('Tous les contacts', style: TextStyle(fontSize: 12))),
-                      DropdownMenuItem(value: ContactType.client, child: Text('Clients uniquement', style: TextStyle(fontSize: 12))),
-                      DropdownMenuItem(value: ContactType.fournisseur, child: Text('Fournisseurs uniquement', style: TextStyle(fontSize: 12))),
-                    ],
-                    onChanged: (val) => setState(() => _selectedType = val),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF6B6B),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    onPressed: () => _showContactDialog(),
-                    icon: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white, size: 16),
-                    label: const Text('Ajouter Contact', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                  )
-                ],
-              ),
             ),
           ),
           const SizedBox(height: 16),
 
           // Contacts Table Grid
           Expanded(
-            child: Card(
-              child: SingleChildScrollView(
-                child: DataTable(
-                  horizontalMargin: 16,
-                  columnSpacing: 16,
-                  columns: const [
-                    DataColumn(label: Text('CONSEIL / NOM COMPLET', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                    DataColumn(label: Text('RELATION TYPE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                    DataColumn(label: Text('TÉLÉPHONE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                    DataColumn(label: Text('SOLDE DE COMPTE (CFA)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                    DataColumn(label: Text('ACTIONS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                  ],
-                  rows: filteredContacts.map((c) {
-                    final isClient = c.type == ContactType.client;
-                    // For suppliers, negative balance means we owe them money (Créditeur)
-                    // For clients, positive balance means they owe us money (Débiteur)
-                    final balText = _formatMoney(c.balance, currency);
-
-                    return DataRow(
-                      cells: [
-                        DataCell(Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
-                        DataCell(
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, py: 2),
-                            decoration: BoxDecoration(
-                              color: isClient ? Colors.blue.shade50 : Colors.purple.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              isClient ? 'CLIENT' : 'GROSSISTE',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: isClient ? Colors.blue.shade700 : Colors.purple.shade700,
-                              ),
-                            ),
-                          ),
+            child: isMobile
+                ? (filteredContacts.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Aucun contact trouvé',
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
                         ),
-                        DataCell(Text(c.phone, style: const TextStyle(fontSize: 12))),
-                        DataCell(
-                          Text(
-                            balText,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Courier',
-                              color: c.balance == 0
-                                  ? Colors.grey
-                                  : (isClient ? Colors.green : Colors.pink),
+                      )
+                    : ListView.builder(
+                        itemCount: filteredContacts.length,
+                        itemBuilder: (context, index) {
+                          final c = filteredContacts[index];
+                          final isClient = c.type == ContactType.client;
+                          final balText = _formatMoney(c.balance, currency);
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: Colors.grey.shade200),
                             ),
-                          ),
-                        ),
-                        DataCell(
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 18),
-                                onPressed: () => _showContactDialog(c),
-                                tooltip: 'Modifier la fiche',
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          c.name,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFF2E3A4B)),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isClient ? Colors.blue.shade50 : Colors.purple.shade50,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          isClient ? 'CLIENT' : 'GROSSISTE',
+                                          style: TextStyle(
+                                            fontSize: 8.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: isClient ? Colors.blue.shade700 : Colors.purple.shade700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Divider(height: 16, thickness: 0.5),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.phone_rounded, size: 14, color: Colors.grey),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          c.phone.isNotEmpty ? c.phone : 'Non renseigné',
+                                          style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.account_balance_wallet_rounded, size: 14, color: Colors.grey),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Solde:',
+                                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        balText,
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Courier',
+                                          color: c.balance == 0
+                                              ? Colors.grey
+                                              : (isClient ? Colors.green : Colors.pink),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Divider(height: 16, thickness: 0.5),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 18),
+                                        onPressed: () => _showContactDialog(c),
+                                        tooltip: 'Modifier la fiche',
+                                        constraints: const BoxConstraints(),
+                                        padding: const EdgeInsets.all(4),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.pink, size: 18),
+                                        onPressed: () {
+                                          ref.read(shopViewModelProvider.notifier).deleteContact(c.id);
+                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contact archivé.')));
+                                        },
+                                        tooltip: 'Supprimer',
+                                        constraints: const BoxConstraints(),
+                                        padding: const EdgeInsets.all(4),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.pink, size: 18),
-                                onPressed: () {
-                                  ref.read(shopViewModelProvider.notifier).deleteContact(c.id);
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contact archivé.')));
-                                },
-                                tooltip: 'Supprimer',
-                              ),
+                            ),
+                          );
+                        },
+                      ))
+                : Card(
+                    child: Scrollbar(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            horizontalMargin: 16,
+                            columnSpacing: 16,
+                            columns: const [
+                              DataColumn(label: Text('CONSEIL / NOM COMPLET', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              DataColumn(label: Text('RELATION TYPE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              DataColumn(label: Text('TÉLÉPHONE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              DataColumn(label: Text('SOLDE DE COMPTE (CFA)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              DataColumn(label: Text('ACTIONS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                             ],
+                            rows: filteredContacts.map((c) {
+                              final isClient = c.type == ContactType.client;
+                              // For suppliers, negative balance means we owe them money (Créditeur)
+                              // For clients, positive balance means they owe us money (Débiteur)
+                              final balText = _formatMoney(c.balance, currency);
+
+                              return DataRow(
+                                cells: [
+                                  DataCell(Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                  DataCell(
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isClient ? Colors.blue.shade50 : Colors.purple.shade50,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        isClient ? 'CLIENT' : 'GROSSISTE',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          color: isClient ? Colors.blue.shade700 : Colors.purple.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(Text(c.phone, style: const TextStyle(fontSize: 12))),
+                                  DataCell(
+                                    Text(
+                                      balText,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Courier',
+                                        color: c.balance == 0
+                                            ? Colors.grey
+                                            : (isClient ? Colors.green : Colors.pink),
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 18),
+                                          onPressed: () => _showContactDialog(c),
+                                          tooltip: 'Modifier la fiche',
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.pink, size: 18),
+                                          onPressed: () {
+                                            ref.read(shopViewModelProvider.notifier).deleteContact(c.id);
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contact archivé.')));
+                                          },
+                                          tooltip: 'Supprimer',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
                           ),
                         ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),

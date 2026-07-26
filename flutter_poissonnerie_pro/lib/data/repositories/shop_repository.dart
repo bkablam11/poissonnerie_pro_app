@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/poissonnerie_models.dart';
+import '../services/cloud_sync_service.dart';
 
 class ShopState {
   final List<Product> products;
@@ -59,46 +63,116 @@ class ShopState {
   }
 }
 
-class LedgerEntry {
-  final String id;
-  final DateTime date;
-  final String accountCode;
-  final String accountName;
-  final String type; // 'Débit' or 'Crédit'
-  final double amount;
-  final String label;
-  final String paymentMode;
-
-  LedgerEntry({
-    required this.id,
-    required this.date,
-    required this.accountCode,
-    required this.accountName,
-    required this.type,
-    required this.amount,
-    required this.label,
-    required this.paymentMode,
-  });
-}
-
 class ShopRepository {
   late ShopState _state;
   final _stateController = StreamController<ShopState>.broadcast();
+  
+  // Service de synchronisation Cloud (Supabase, Firebase ou Mock par défaut)
+  final CloudSyncService _cloudSyncService = MockCloudSyncService();
 
   Stream<ShopState> get stateStream => _stateController.stream;
   ShopState get currentState => _state;
 
   ShopRepository() {
     _loadSeedData();
+    _loadState(); // Try loading persisted state from local physical DB
   }
 
   void dispose() {
     _stateController.close();
   }
 
+  // Load from local storage (SharedPreferences database)
+  Future<void> _loadState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final productsJson = prefs.getString('shop_products');
+      final salesJson = prefs.getString('shop_sales');
+      final purchasesJson = prefs.getString('shop_purchases');
+      final lossesJson = prefs.getString('shop_losses');
+      final contactsJson = prefs.getString('shop_contacts');
+      final ledgerJson = prefs.getString('shop_ledger');
+      final settingsJson = prefs.getString('shop_settings');
+
+      if (productsJson != null || salesJson != null || contactsJson != null) {
+        List<Product> products = _state.products;
+        if (productsJson != null) {
+          final List decoded = jsonDecode(productsJson);
+          products = decoded.map((x) => Product.fromMap(x)).toList();
+        }
+
+        List<Sale> sales = _state.sales;
+        if (salesJson != null) {
+          final List decoded = jsonDecode(salesJson);
+          sales = decoded.map((x) => Sale.fromMap(x)).toList();
+        }
+
+        List<Arrival> purchases = _state.purchases;
+        if (purchasesJson != null) {
+          final List decoded = jsonDecode(purchasesJson);
+          purchases = decoded.map((x) => Arrival.fromMap(x)).toList();
+        }
+
+        List<Loss> losses = _state.losses;
+        if (lossesJson != null) {
+          final List decoded = jsonDecode(lossesJson);
+          losses = decoded.map((x) => Loss.fromMap(x)).toList();
+        }
+
+        List<Contact> contacts = _state.contacts;
+        if (contactsJson != null) {
+          final List decoded = jsonDecode(contactsJson);
+          contacts = decoded.map((x) => Contact.fromMap(x)).toList();
+        }
+
+        List<LedgerEntry> ledger = _state.ledger;
+        if (ledgerJson != null) {
+          final List decoded = jsonDecode(ledgerJson);
+          ledger = decoded.map((x) => LedgerEntry.fromMap(x)).toList();
+        }
+
+        Map<String, String> settings = _state.settings;
+        if (settingsJson != null) {
+          final Map<String, dynamic> decoded = jsonDecode(settingsJson);
+          settings = decoded.map((k, v) => MapEntry(k, v.toString()));
+        }
+
+        _state = ShopState(
+          products: products,
+          sales: sales,
+          purchases: purchases,
+          losses: losses,
+          contacts: contacts,
+          ledger: ledger,
+          settings: settings,
+        );
+        _stateController.add(_state);
+      }
+    } catch (e) {
+      print("Error loading persistent state: $e");
+    }
+  }
+
+  // Save state to local database
+  Future<void> _saveState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('shop_products', jsonEncode(_state.products.map((e) => e.toMap()).toList()));
+      await prefs.setString('shop_sales', jsonEncode(_state.sales.map((e) => e.toMap()).toList()));
+      await prefs.setString('shop_purchases', jsonEncode(_state.purchases.map((e) => e.toMap()).toList()));
+      await prefs.setString('shop_losses', jsonEncode(_state.losses.map((e) => e.toMap()).toList()));
+      await prefs.setString('shop_contacts', jsonEncode(_state.contacts.map((e) => e.toMap()).toList()));
+      await prefs.setString('shop_ledger', jsonEncode(_state.ledger.map((e) => e.toMap()).toList()));
+      await prefs.setString('shop_settings', jsonEncode(_state.settings));
+    } catch (e) {
+      print("Error saving persistent state: $e");
+    }
+  }
+
   void toggleOnlineStatus() {
     _state = _state.copyWith(isOnline: !_state.isOnline);
     _stateController.add(_state);
+    _saveState();
     if (_state.isOnline) {
       triggerSync();
     }
@@ -114,54 +188,114 @@ class ShopRepository {
     _state = _state.copyWith(isSyncing: true, syncError: null);
     _stateController.add(_state);
 
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // 1. Récupérer les ventes non synchronisées
+      final unsyncedSales = _state.sales.where((s) => !s.isSynced).toList();
 
-    // Mark all as synced
-    final updatedSales = _state.sales.map((s) => s.copyWith(isSynced: true)).toList();
+      // Choisir le service dynamique de synchro
+      String url = _state.settings['supabaseUrl'] ?? '';
+      String anonKey = _state.settings['supabaseAnonKey'] ?? '';
+      
+      // Fallback sur le fichier .env si les paramètres de l'application sont vides
+      if (url.isEmpty || anonKey.isEmpty) {
+        url = dotenv.env['SUPABASE_URL'] ?? '';
+        anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+        // Éviter d'utiliser la valeur de placeholder par défaut
+        if (url == 'https://VOTRE_PROJET_ID.supabase.co' || anonKey == 'VOTRE_CLE_API_ANONYME') {
+          url = '';
+          anonKey = '';
+        }
+      }
 
-    _state = _state.copyWith(
-      isSyncing: false,
-      sales: updatedSales,
-      syncError: null,
-    );
+      final CloudSyncService activeSyncService = (url.isNotEmpty && anonKey.isNotEmpty)
+          ? SupabaseSyncService(url: url, anonKey: anonKey)
+          : _cloudSyncService;
+
+      // 2. Synchroniser en parallèle les données vers le cloud
+      final results = await Future.wait([
+        if (unsyncedSales.isNotEmpty) activeSyncService.pushSales(unsyncedSales) else Future.value(true),
+        activeSyncService.pushProducts(_state.products),
+        activeSyncService.pushContacts(_state.contacts),
+        activeSyncService.pushPurchases(_state.purchases),
+        activeSyncService.pushLosses(_state.losses),
+        activeSyncService.pushLedger(_state.ledger),
+      ]);
+
+      final allSuccess = results.every((success) => success);
+
+      if (allSuccess) {
+        // Marquer toutes les ventes locales comme synchronisées
+        final updatedSales = _state.sales.map((s) => s.copyWith(isSynced: true)).toList();
+        
+        // Optionnel : Vous pouvez aussi rafraîchir la liste locale des produits et contacts
+        // avec les données les plus récentes consolidées du cloud
+        final latestProducts = await activeSyncService.fetchLatestProducts();
+        final latestContacts = await activeSyncService.fetchLatestContacts();
+
+        _state = _state.copyWith(
+          isSyncing: false,
+          sales: updatedSales,
+          products: latestProducts.isNotEmpty ? latestProducts : _state.products,
+          contacts: latestContacts.isNotEmpty ? latestContacts : _state.contacts,
+          syncError: null,
+        );
+      } else {
+        _state = _state.copyWith(
+          isSyncing: false,
+          syncError: "Échec partiel de la synchronisation avec le cloud.",
+        );
+      }
+    } catch (e) {
+      _state = _state.copyWith(
+        isSyncing: false,
+        syncError: "Erreur de connexion cloud : ${e.toString()}",
+      );
+    }
+
     _stateController.add(_state);
+    _saveState();
   }
 
   void addProduct(Product product) {
     final updatedProducts = List<Product>.from(_state.products)..insert(0, product);
     _state = _state.copyWith(products: updatedProducts);
     _stateController.add(_state);
+    _saveState();
   }
 
   void updateProduct(Product product) {
     final updatedProducts = _state.products.map((p) => p.id == product.id ? product : p).toList();
     _state = _state.copyWith(products: updatedProducts);
     _stateController.add(_state);
+    _saveState();
   }
 
   void deleteProduct(String id) {
     final updatedProducts = _state.products.where((p) => p.id != id).toList();
     _state = _state.copyWith(products: updatedProducts);
     _stateController.add(_state);
+    _saveState();
   }
 
   void addContact(Contact contact) {
     final updatedContacts = List<Contact>.from(_state.contacts)..insert(0, contact);
     _state = _state.copyWith(contacts: updatedContacts);
     _stateController.add(_state);
+    _saveState();
   }
 
   void updateContact(Contact contact) {
     final updatedContacts = _state.contacts.map((c) => c.id == contact.id ? contact : c).toList();
     _state = _state.copyWith(contacts: updatedContacts);
     _stateController.add(_state);
+    _saveState();
   }
 
   void deleteContact(String id) {
     final updatedContacts = _state.contacts.where((c) => c.id != id).toList();
     _state = _state.copyWith(contacts: updatedContacts);
     _stateController.add(_state);
+    _saveState();
   }
 
   void addSale({
@@ -242,6 +376,7 @@ class ShopRepository {
       ledger: [ledgerDebit, ledgerCredit, ..._state.ledger],
     );
     _stateController.add(_state);
+    _saveState();
 
     if (_state.isOnline) {
       triggerSync();
@@ -315,11 +450,11 @@ class ShopRepository {
       updatedProducts.insert(0, Product(
         id: 'prod-${now.millisecondsSinceEpoch}',
         name: fishName,
-        category: ProductCategory.poissonFrais,
+        category: ProductCategory.poissonCongele,
         stockKg: quantityKg,
         purchasePrice: purchaseCost,
         sellingPrice: suggestedSellingPrice,
-        minThresholdKg: 10.0,
+        minThresholdKg: 5.0,
       ));
     }
 
@@ -329,6 +464,7 @@ class ShopRepository {
       ledger: [ledgerDebit, ledgerCredit, ..._state.ledger],
     );
     _stateController.add(_state);
+    _saveState();
   }
 
   void addLoss({
@@ -389,6 +525,7 @@ class ShopRepository {
       ledger: [ledgerDebit, ledgerCredit, ..._state.ledger],
     );
     _stateController.add(_state);
+    _saveState();
   }
 
   void addExpense({
@@ -439,57 +576,80 @@ class ShopRepository {
       ledger: [ledgerDebit, ledgerCredit, ..._state.ledger],
     );
     _stateController.add(_state);
+    _saveState();
   }
 
   void updateSettings(Map<String, String> settings) {
     _state = _state.copyWith(settings: settings);
     _stateController.add(_state);
+    _saveState();
   }
 
   void resetToSeed() {
     _loadSeedData();
+    _saveState();
   }
 
   void _loadSeedData() {
     final now = DateTime.now();
 
     final seedProducts = [
-      Product(id: 'prod-1', name: 'Bar de Ligne Entier', category: ProductCategory.poissonFrais, stockKg: 45.0, purchasePrice: 7000, sellingPrice: 12000, minThresholdKg: 15.0),
-      Product(id: 'prod-2', name: 'Saumon Atlantique (Pavé)', category: ProductCategory.poissonCongele, stockKg: 28.0, purchasePrice: 8500, sellingPrice: 14500, minThresholdKg: 10.0),
-      Product(id: 'prod-3', name: 'Daurade Royale de Mer', category: ProductCategory.poissonFrais, stockKg: 8.0, purchasePrice: 4000, sellingPrice: 7500, minThresholdKg: 12.0),
-      Product(id: 'prod-4', name: 'Crevettes Tigrées Géantes', category: ProductCategory.crustaces, stockKg: 35.0, purchasePrice: 8000, sellingPrice: 14000, minThresholdKg: 10.0),
-      Product(id: 'prod-5', name: 'Homard Bleu Vivant', category: ProductCategory.crustaces, stockKg: 5.0, purchasePrice: 18000, sellingPrice: 32000, minThresholdKg: 4.0),
-      Product(id: 'prod-6', name: 'Huîtres Marennes d’Oléron N°3', category: ProductCategory.coquillages, stockKg: 12.0, purchasePrice: 4500, sellingPrice: 8500, minThresholdKg: 10.0),
-      Product(id: 'prod-7', name: 'Noix de Saint-Jacques Franches', category: ProductCategory.coquillages, stockKg: 3.0, purchasePrice: 13000, sellingPrice: 24000, minThresholdKg: 8.0),
+      Product(id: 'POI-001', name: 'PELON (lokor-lokor)', category: ProductCategory.poissonCongele, stockKg: 9.0, purchasePrice: 16500, sellingPrice: 18500, minThresholdKg: 5.0),
+      Product(id: 'POI-002', name: 'BELLE DAME', category: ProductCategory.poissonCongele, stockKg: 4.0, purchasePrice: 9000, sellingPrice: 11500, minThresholdKg: 5.0),
+      Product(id: 'POI-003', name: 'MACHOIRON', category: ProductCategory.poissonCongele, stockKg: 12.0, purchasePrice: 8500, sellingPrice: 11000, minThresholdKg: 5.0),
+      Product(id: 'POI-004', name: 'MULLET', category: ProductCategory.poissonCongele, stockKg: 0.0, purchasePrice: 17000, sellingPrice: 17500, minThresholdKg: 5.0),
+      Product(id: 'POI-005', name: 'LAME', category: ProductCategory.poissonCongele, stockKg: 2.0, purchasePrice: 19000, sellingPrice: 20000, minThresholdKg: 5.0),
+      Product(id: 'POI-006', name: 'APPOLLO 300/500 (MOYEN)', category: ProductCategory.poissonCongele, stockKg: 5.0, purchasePrice: 27500, sellingPrice: 29000, minThresholdKg: 5.0),
+      Product(id: 'POI-007', name: 'CARPE 300/500 (MOYEN)', category: ProductCategory.poissonCongele, stockKg: 13.0, purchasePrice: 10000, sellingPrice: 12000, minThresholdKg: 5.0),
+      Product(id: 'POI-008', name: 'CARPE 500/800 (GRAND)', category: ProductCategory.poissonCongele, stockKg: 6.0, purchasePrice: 11500, sellingPrice: 13000, minThresholdKg: 5.0),
+      Product(id: 'POI-009', name: 'CARPE ROUGE M (GRAND)', category: ProductCategory.poissonCongele, stockKg: 0.0, purchasePrice: 21000, sellingPrice: 22500, minThresholdKg: 5.0),
+      Product(id: 'POI-010', name: 'CARPE ROUGE P (MOYEN)', category: ProductCategory.poissonCongele, stockKg: 1.0, purchasePrice: 21000, sellingPrice: 22000, minThresholdKg: 5.0),
+      Product(id: 'POI-011', name: 'CARPE ROUGE 2P (PETIT)', category: ProductCategory.poissonCongele, stockKg: 4.0, purchasePrice: 14500, sellingPrice: 16000, minThresholdKg: 5.0),
+      Product(id: 'POI-012', name: 'MAQUEREAU 500/1500 (GRAND)', category: ProductCategory.poissonCongele, stockKg: 4.0, purchasePrice: 25000, sellingPrice: 27000, minThresholdKg: 5.0),
+      Product(id: 'POI-013', name: 'MAQUEREAU 250/400 (MOYEN)', category: ProductCategory.poissonCongele, stockKg: 59.0, purchasePrice: 25500, sellingPrice: 27000, minThresholdKg: 5.0),
+      Product(id: 'POI-014', name: 'APPOLLO 300/600 (MOYEN)', category: ProductCategory.poissonCongele, stockKg: 28.0, purchasePrice: 25500, sellingPrice: 29000, minThresholdKg: 5.0),
+      Product(id: 'POI-015', name: 'APPOLLO 200/400 (PETIT)', category: ProductCategory.poissonCongele, stockKg: 6.0, purchasePrice: 22500, sellingPrice: 26000, minThresholdKg: 5.0),
+      Product(id: 'POI-016', name: 'APPOLLO 500/900 (GRAND)', category: ProductCategory.poissonCongele, stockKg: 25.0, purchasePrice: 27500, sellingPrice: 29000, minThresholdKg: 5.0),
+      Product(id: 'POI-017', name: 'MANGNE SARDINE', category: ProductCategory.poissonCongele, stockKg: 21.0, purchasePrice: 15000, sellingPrice: 17000, minThresholdKg: 5.0),
+      Product(id: 'POI-018', name: 'MANGNE SIMPLE MOYEN (SARDEB...)', category: ProductCategory.poissonCongele, stockKg: 0.0, purchasePrice: 17000, sellingPrice: 19000, minThresholdKg: 5.0),
+      Product(id: 'POI-019', name: 'TOMBOLA (BLUEWHIT_20)', category: ProductCategory.poissonCongele, stockKg: 29.0, purchasePrice: 14000, sellingPrice: 16000, minThresholdKg: 5.0),
+      Product(id: 'POI-020', name: 'MULLET_29_05_26', category: ProductCategory.poissonCongele, stockKg: 31.0, purchasePrice: 18000, sellingPrice: 19500, minThresholdKg: 10.0),
+      Product(id: 'POI-021', name: 'CARPE 500/800_29_05_26', category: ProductCategory.poissonCongele, stockKg: 20.0, purchasePrice: 11000, sellingPrice: 13000, minThresholdKg: 10.0),
+      Product(id: 'POI-022', name: 'CARPE ROUGE P_29_05_26', category: ProductCategory.poissonCongele, stockKg: 0.0, purchasePrice: 21000, sellingPrice: 22500, minThresholdKg: 10.0),
     ];
 
     final seedContacts = [
-      Contact(id: 'cont-1', name: 'Sénégal Pêche SA', phone: '+221 33 849 11 22', type: ContactType.fournisseur, balance: -450000.0),
-      Contact(id: 'cont-2', name: 'Marée d’Abidjan Grossiste', phone: '+225 07 45 12 34 56', type: ContactType.fournisseur, balance: 0.0),
-      Contact(id: 'cont-3', name: 'Hôtel du Golfe Abidjan', phone: '+225 27 22 44 88 00', type: ContactType.client, balance: 150000.0),
-      Contact(id: 'cont-4', name: 'Restaurant Le Phare Solaire', phone: '+225 05 66 77 88 99', type: ContactType.client, balance: 250000.0),
+      Contact(id: 'FOU-001', name: 'SONAL', phone: '07 07 20 33 22 (M. KOUAKOU)', type: ContactType.fournisseur, balance: 0.0),
+      Contact(id: 'CLI-001', name: 'client1', phone: '0748782205', type: ContactType.client, balance: 0.0),
+      Contact(id: 'CLI-002', name: 'Mme Adeline', phone: '05 45 42 01 63', type: ContactType.client, balance: 0.0),
+      Contact(id: 'CLI-003', name: 'Mme Elisa', phone: '05 96 92 43 28', type: ContactType.client, balance: 0.0),
+      Contact(id: 'CLI-004', name: 'Mme Safiatou', phone: '05 64 69 46 72', type: ContactType.client, balance: 0.0),
+      Contact(id: 'CLI-005', name: 'Mme CHANTAL', phone: '05 04 01 71 35', type: ContactType.client, balance: 0.0),
+      Contact(id: 'CLI-006', name: 'MME ADELE', phone: '01 53 04 60', type: ContactType.client, balance: 0.0),
+      Contact(id: 'CLI-007', name: 'TUO NAWA', phone: '07 10 39 36 09', type: ContactType.client, balance: 0.0),
+      Contact(id: 'CLI-008', name: 'M. FULGENCE', phone: '07 68 47 18 25', type: ContactType.client, balance: 0.0),
     ];
 
     final seedSales = [
       Sale(
         id: 'sale-1',
-        customerName: 'Hôtel du Golfe Abidjan',
+        customerName: 'client1',
         items: [
-          SaleItem(productId: 'prod-1', productName: 'Bar de Ligne Entier', quantityKg: 5, unitPrice: 12000),
-          SaleItem(productId: 'prod-4', productName: 'Crevettes Tigrées Géantes', quantityKg: 3, unitPrice: 14000),
+          SaleItem(productId: 'POI-001', productName: 'PELON (lokor-lokor)', quantityKg: 2, unitPrice: 18500),
+          SaleItem(productId: 'POI-002', productName: 'BELLE DAME', quantityKg: 1, unitPrice: 11500),
         ],
-        totalAmount: 120360,
-        paymentMode: PaymentMode.bank,
+        totalAmount: 48500,
+        paymentMode: PaymentMode.cash,
         date: now.subtract(const Duration(days: 3)),
         isSynced: true,
       ),
       Sale(
         id: 'sale-2',
-        customerName: 'Client Comptant',
+        customerName: 'Mme Adeline',
         items: [
-          SaleItem(productId: 'prod-2', productName: 'Saumon Atlantique (Pavé)', quantityKg: 4, unitPrice: 14500),
+          SaleItem(productId: 'POI-003', productName: 'MACHOIRON', quantityKg: 3, unitPrice: 11000),
         ],
-        totalAmount: 108560,
+        totalAmount: 33000,
         paymentMode: PaymentMode.cash,
         date: now.subtract(const Duration(days: 2)),
         isSynced: true,
@@ -497,18 +657,16 @@ class ShopRepository {
     ];
 
     final seedLedger = [
-      LedgerEntry(id: 'led-1', date: now.subtract(const Duration(days: 30)), accountCode: '101', accountName: 'Capital', type: 'Crédit', amount: 10000000, label: 'Apport de capital initial', paymentMode: 'Autre'),
-      LedgerEntry(id: 'led-2', date: now.subtract(const Duration(days: 30)), accountCode: '521', accountName: 'Banque', type: 'Débit', amount: 8000000, label: 'Versement capital Banque', paymentMode: 'Banque'),
-      LedgerEntry(id: 'led-3', date: now.subtract(const Duration(days: 30)), accountCode: '571', accountName: 'Caisse', type: 'Débit', amount: 2000000, label: 'Alimentation caisse', paymentMode: 'Espèces'),
-      LedgerEntry(id: 'led-f1', date: now.subtract(const Duration(days: 6)), accountCode: '65', accountName: 'Autres Charges / Frais', type: 'Débit', amount: 35000, label: 'Frais de Glace écailleuse', paymentMode: 'Espèces'),
-      LedgerEntry(id: 'led-f2', date: now.subtract(const Duration(days: 6)), accountCode: '571', accountName: 'Caisse', type: 'Crédit', amount: 35000, label: 'Paiement Glace écailleuse', paymentMode: 'Espèces'),
+      LedgerEntry(id: 'led-1', date: now.subtract(const Duration(days: 30)), accountCode: '101', accountName: 'Capital', type: 'Crédit', amount: 5000000, label: 'Apport de capital initial', paymentMode: 'Autre'),
+      LedgerEntry(id: 'led-2', date: now.subtract(const Duration(days: 30)), accountCode: '521', accountName: 'Banque', type: 'Débit', amount: 4000000, label: 'Versement capital Banque', paymentMode: 'Banque'),
+      LedgerEntry(id: 'led-3', date: now.subtract(const Duration(days: 30)), accountCode: '571', accountName: 'Caisse', type: 'Débit', amount: 1000000, label: 'Alimentation caisse', paymentMode: 'Espèces'),
     ];
 
     final seedSettings = {
       'shopName': 'Poissonnerie Pro',
-      'address': '12 Port de Pêche, Abidjan, Côte d’Ivoire',
-      'phone': '+225 07 45 12 34 56',
-      'taxId': 'CC-9876543-A',
+      'address': 'Gros de Bouaké, Côte d’Ivoire',
+      'phone': '+225 07 07 20 33 22',
+      'taxId': 'CC-0123456-B',
       'currency': 'FCFA',
       'vatRate': '18',
     };

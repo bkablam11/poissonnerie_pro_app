@@ -1,4 +1,4 @@
-import 'package:flutter/material';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../view_models/shop_view_model.dart';
 import '../../data/models/poissonnerie_models.dart';
@@ -92,265 +92,331 @@ class _CashTabViewState extends ConsumerState<CashTabView> {
         .where((entry) => entry.accountCode == '571' || entry.accountCode == '521')
         .toList();
 
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          // Cash Registers KPIs Row
-          Row(
-            children: [
-              Expanded(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'COMPTE 571 — SOLDE CAISSE PHYSIQUE',
-                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.1),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _formatMoney(cashBalance, currency),
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.black, color: Color(0xFF1E293B), fontFamily: 'Courier'),
-                            ),
-                          ],
-                        ),
-                        const Icon(Icons.payments_rounded, color: Colors.orange, size: 28),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'COMPTE 521 — BANQUE & MOBILE MONEY',
-                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.1),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _formatMoney(bankBalance, currency),
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.black, color: Colors.emerald, fontFamily: 'Courier'),
-                            ),
-                          ],
-                        ),
-                        const Icon(Icons.account_balance_rounded, color: Colors.emerald, size: 28),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+    final isMobile = MediaQuery.of(context).size.width < 1024;
 
-          // Lower Section Form (Left) & Ledger Movements (Right)
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final cashCard = Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'COMPTE 571 — CAISSE PHYSIQUE',
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.1),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _formatMoney(cashBalance, currency),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B), fontFamily: 'Courier'),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.payments_rounded, color: Colors.orange, size: 24),
+          ],
+        ),
+      ),
+    );
+
+    final bankCard = Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'COMPTE 521 — BANQUE & MOMO',
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.1),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _formatMoney(bankBalance, currency),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.green, fontFamily: 'Courier'),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.account_balance_rounded, color: Colors.green, size: 24),
+          ],
+        ),
+      ),
+    );
+
+    final formCard = Card(
+      child: Padding(
+        padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Row(
               children: [
-                // Form Card
+                Icon(Icons.add_circle_outline_rounded, color: Color(0xFFFF6B6B), size: 20),
+                SizedBox(width: 8),
                 Expanded(
-                  flex: 6,
-                  child: SingleChildScrollView(
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.add_circle_outline_rounded, color: Color(0xFFFF6B6B), size: 20),
-                                SizedBox(width: 8),
-                                Text('Enregistrer des Frais de Fonctionnement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFF2E3A4B))),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Category
-                            const Text('CATÉGORIE DE DÉPENSE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
-                            const SizedBox(height: 6),
-                            DropdownButtonFormField<String>(
-                              value: _selectedCategory,
-                              decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
-                              items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 12)))).toList(),
-                              onChanged: (val) {
-                                if (val != null) setState(() => _selectedCategory = val);
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Label & Amount Row
-                            Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('LIBELLÉ DESCRIPTIF', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
-                                      const SizedBox(height: 6),
-                                      TextField(
-                                        controller: _labelController,
-                                        decoration: const InputDecoration(hintText: 'Ex: Achat 5 sacs de glace', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  flex: 1,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('MONTANT (CFA)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
-                                      const SizedBox(height: 6),
-                                      TextField(
-                                        controller: _amountController,
-                                        keyboardType: TextInputType.number,
-                                        decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Payment Mode
-                            const Text('MODE DE RÈGLEMENT EFFECTUÉ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ChoiceChip(
-                                    label: const Text('ESPÈCES (CAISSE 571)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                    selected: _paymentMode == PaymentMode.cash,
-                                    onSelected: (_) => setState(() => _paymentMode = PaymentMode.cash),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: ChoiceChip(
-                                    label: const Text('BANQUE (MOMO 521)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                    selected: _paymentMode == PaymentMode.bank,
-                                    onSelected: (_) => setState(() => _paymentMode = PaymentMode.bank),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-
-                            ElevatedButton(
-                              onPressed: _submitExpense,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF6B6B),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              ),
-                              child: const Text('Enregistrer & Sortir Espèces/Fonds', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  child: Text(
+                    'Enregistrer des Frais de Fonctionnement',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2E3A4B)),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 16),
-
-                // Ledger history card
-                Expanded(
-                  flex: 5,
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.list_alt_rounded, color: Colors.grey, size: 20),
-                              SizedBox(width: 8),
-                              Text('Grand Livre Trésorerie (Flux 571 / 521)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2E3A4B))),
-                            ],
-                          ),
-                          const Divider(height: 24),
-                          Expanded(
-                            child: treasuryLedger.isEmpty
-                                ? Center(
-                                    child: Text('Aucun mouvement comptable.', style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
-                                  )
-                                : ListView.builder(
-                                    itemCount: treasuryLedger.length,
-                                    itemBuilder: (context, idx) {
-                                      final item = treasuryLedger[idx];
-                                      final isDebit = item.type == 'Débit';
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF8FAFC),
-                                            borderRadius: BorderRadius.circular(16),
-                                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                                          ),
-                                          padding: const EdgeInsets.all(12),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      item.label,
-                                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, overflow: TextOverflow.ellipsis),
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text('Compte: ${item.accountCode} (${item.accountName}) | ${item.paymentMode}', style: const TextStyle(fontSize: 9, color: Colors.grey)),
-                                                  ],
-                                                ),
-                                              ),
-                                              Text(
-                                                '${isDebit ? '+' : '-'} ${_formatMoney(item.amount, '')}',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
-                                                  fontFamily: 'Courier',
-                                                  color: isDebit ? Colors.green : Colors.pink,
-                                                ),
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                )
               ],
             ),
-          )
-        ],
+            const SizedBox(height: 20),
+
+            // Category
+            const Text('CATÉGORIE DE DÉPENSE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+            const SizedBox(height: 6),
+            DropdownButtonFormField<String>(
+              value: _selectedCategory,
+              isExpanded: true,
+              decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+              items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis))).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedCategory = val);
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Label & Amount Column/Row
+            isMobile
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('LIBELLÉ DESCRIPTIF', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: _labelController,
+                            decoration: const InputDecoration(hintText: 'Ex: Achat 5 sacs de glace', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('MONTANT (CFA)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: _amountController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('LIBELLÉ DESCRIPTIF', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: _labelController,
+                              decoration: const InputDecoration(hintText: 'Ex: Achat 5 sacs de glace', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('MONTANT (CFA)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: _amountController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+            const SizedBox(height: 16),
+
+            // Payment Mode
+            const Text('MODE DE RÈGLEMENT EFFECTUÉ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('ESPÈCES (CAISSE)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+                    selected: _paymentMode == PaymentMode.cash,
+                    onSelected: (_) => setState(() => _paymentMode = PaymentMode.cash),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('BANQUE (MOMO)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+                    selected: _paymentMode == PaymentMode.bank,
+                    onSelected: (_) => setState(() => _paymentMode = PaymentMode.bank),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            ElevatedButton(
+              onPressed: _submitExpense,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF6B6B),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text('Enregistrer & Sortir Espèces/Fonds', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
+          ],
+        ),
       ),
+    );
+
+    final historyCard = Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.list_alt_rounded, color: Colors.grey, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Grand Livre Trésorerie (Flux 571 / 521)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2E3A4B)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Expanded(
+              child: treasuryLedger.isEmpty
+                  ? Center(
+                      child: Text('Aucun mouvement comptable.', style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+                    )
+                  : ListView.builder(
+                      itemCount: treasuryLedger.length,
+                      itemBuilder: (context, idx) {
+                        final item = treasuryLedger[idx];
+                        final isDebit = item.type == 'Débit';
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.label,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, overflow: TextOverflow.ellipsis),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text('Compte: ${item.accountCode} (${item.accountName}) | ${item.paymentMode}', style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${isDebit ? '+' : '-'} ${_formatMoney(item.amount, '')}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    fontFamily: 'Courier',
+                                    color: isDebit ? Colors.green : Colors.pink,
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            )
+          ],
+        ),
+      ),
+    );
+
+    return Padding(
+      padding: EdgeInsets.all(isMobile ? 12.0 : 24.0),
+      child: isMobile
+          ? SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  cashCard,
+                  const SizedBox(height: 8),
+                  bankCard,
+                  const SizedBox(height: 16),
+                  formCard,
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 400,
+                    child: historyCard,
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: cashCard),
+                    const SizedBox(width: 16),
+                    Expanded(child: bankCard),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: SingleChildScrollView(child: formCard),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 5,
+                        child: historyCard,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

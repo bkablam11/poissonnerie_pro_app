@@ -3,6 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/poissonnerie_models.dart';
 import '../data/repositories/shop_repository.dart';
 
+enum UserRole {
+  none,
+  cashier, // Caissier (Ventes, Pertes)
+  manager, // Gérant (Comptabilité, Paramètres, Stock, Arrivages, etc.)
+}
+
+final userRoleProvider = StateProvider<UserRole>((ref) => UserRole.none);
+
 // Create a single instance provider for our repository
 final shopRepositoryProvider = Provider<ShopRepository>((ref) {
   final repo = ShopRepository();

@@ -1,8 +1,37 @@
-import 'package:flutter/material';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'views/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Charger les variables d'environnement
+  try {
+    await dotenv.load(fileName: "assets/.env");
+  } catch (e) {
+    debugPrint("Impossible de charger le fichier assets/.env : $e");
+  }
+
+  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+
+  // Initialiser Supabase si les clés sont valides et ne sont pas les valeurs par défaut
+  if (supabaseUrl.isNotEmpty &&
+      supabaseAnonKey.isNotEmpty &&
+      supabaseUrl != 'https://gszdqyfppznyerogbyme.supabase.co' &&
+      supabaseAnonKey != 'sb_publishable_zSRxoIw54SbJdWb4iiAoXA_DqLAqE14') {
+    try {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+      );
+    } catch (e) {
+      debugPrint("Erreur lors de l'initialisation de Supabase: $e");
+    }
+  }
+
   runApp(
     const ProviderScope(
       child: PoissonnerieApp(),
@@ -35,7 +64,7 @@ class PoissonnerieApp extends StatelessWidget {
           bodyLarge: TextStyle(fontFamily: 'Inter', color: Color(0xFF334155)),
           bodyMedium: TextStyle(fontFamily: 'Inter', color: Color(0xFF475569)),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(

@@ -14,7 +14,7 @@ extension CategoryExtension on ProductCategory {
       case ProductCategory.poissonFrais:
         return 'Poisson Frais';
       case ProductCategory.poissonCongele:
-        return 'Poisson Congelé';
+        return 'Poisson Congelé (Paquet/Carton)';
       case ProductCategory.crustaces:
         return 'Crustacés';
       case ProductCategory.coquillages:
@@ -30,8 +30,8 @@ class Product {
   final String name;
   final ProductCategory category;
   final double stockKg;
-  final double purchasePrice; // Price per Kg in CFA
-  final double sellingPrice;  // Price per Kg in CFA
+  final double purchasePrice; // Price in CFA
+  final double sellingPrice;  // Price in CFA
   final double minThresholdKg;
 
   Product({
@@ -66,6 +66,33 @@ class Product {
       minThresholdKg: minThresholdKg ?? this.minThresholdKg,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'category': category.name,
+      'stockKg': stockKg,
+      'purchasePrice': purchasePrice,
+      'sellingPrice': sellingPrice,
+      'minThresholdKg': minThresholdKg,
+    };
+  }
+
+  factory Product.fromMap(Map<String, dynamic> map) {
+    return Product(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      category: ProductCategory.values.firstWhere(
+        (e) => e.name == map['category'],
+        orElse: () => ProductCategory.poissonCongele,
+      ),
+      stockKg: (map['stockKg'] as num?)?.toDouble() ?? 0.0,
+      purchasePrice: (map['purchasePrice'] as num?)?.toDouble() ?? 0.0,
+      sellingPrice: (map['sellingPrice'] as num?)?.toDouble() ?? 0.0,
+      minThresholdKg: (map['minThresholdKg'] as num?)?.toDouble() ?? 5.0,
+    );
+  }
 }
 
 class SaleItem {
@@ -82,6 +109,24 @@ class SaleItem {
   });
 
   double get subtotal => quantityKg * unitPrice;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'productId': productId,
+      'productName': productName,
+      'quantityKg': quantityKg,
+      'unitPrice': unitPrice,
+    };
+  }
+
+  factory SaleItem.fromMap(Map<String, dynamic> map) {
+    return SaleItem(
+      productId: map['productId'] ?? '',
+      productName: map['productName'] ?? '',
+      quantityKg: (map['quantityKg'] as num?)?.toDouble() ?? 0.0,
+      unitPrice: (map['unitPrice'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }
 
 enum PaymentMode {
@@ -131,6 +176,36 @@ class Sale {
       isSynced: isSynced ?? this.isSynced,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'customerName': customerName,
+      'items': items.map((x) => x.toMap()).toList(),
+      'totalAmount': totalAmount,
+      'paymentMode': paymentMode.name,
+      'date': date.toIso8601String(),
+      'isSynced': isSynced,
+    };
+  }
+
+  factory Sale.fromMap(Map<String, dynamic> map) {
+    return Sale(
+      id: map['id'] ?? '',
+      customerName: map['customerName'],
+      items: (map['items'] as List<dynamic>?)
+              ?.map((x) => SaleItem.fromMap(x as Map<String, dynamic>))
+              .toList() ??
+          [],
+      totalAmount: (map['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      paymentMode: PaymentMode.values.firstWhere(
+        (e) => e.name == map['paymentMode'],
+        orElse: () => PaymentMode.cash,
+      ),
+      date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+      isSynced: map['isSynced'] ?? false,
+    );
+  }
 }
 
 class Arrival {
@@ -153,6 +228,30 @@ class Arrival {
   });
 
   double get totalCost => quantityKg * unitPurchaseCost;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'supplierName': supplierName,
+      'fishName': fishName,
+      'quantityKg': quantityKg,
+      'unitPurchaseCost': unitPurchaseCost,
+      'suggestedSellingPrice': suggestedSellingPrice,
+      'date': date.toIso8601String(),
+    };
+  }
+
+  factory Arrival.fromMap(Map<String, dynamic> map) {
+    return Arrival(
+      id: map['id'] ?? '',
+      supplierName: map['supplierName'] ?? '',
+      fishName: map['fishName'] ?? '',
+      quantityKg: (map['quantityKg'] as num?)?.toDouble() ?? 0.0,
+      unitPurchaseCost: (map['unitPurchaseCost'] as num?)?.toDouble() ?? 0.0,
+      suggestedSellingPrice: (map['suggestedSellingPrice'] as num?)?.toDouble() ?? 0.0,
+      date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+    );
+  }
 }
 
 enum LossReason {
@@ -197,6 +296,33 @@ class Loss {
   });
 
   double get totalLossValue => quantityKg * unitCost;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'productId': productId,
+      'productName': productName,
+      'quantityKg': quantityKg,
+      'unitCost': unitCost,
+      'reason': reason.name,
+      'date': date.toIso8601String(),
+    };
+  }
+
+  factory Loss.fromMap(Map<String, dynamic> map) {
+    return Loss(
+      id: map['id'] ?? '',
+      productId: map['productId'] ?? '',
+      productName: map['productName'] ?? '',
+      quantityKg: (map['quantityKg'] as num?)?.toDouble() ?? 0.0,
+      unitCost: (map['unitCost'] as num?)?.toDouble() ?? 0.0,
+      reason: LossReason.values.firstWhere(
+        (e) => e.name == map['reason'],
+        orElse: () => LossReason.avarie,
+      ),
+      date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+    );
+  }
 }
 
 enum ContactType {
@@ -234,6 +360,29 @@ class Contact {
       balance: balance ?? this.balance,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'phone': phone,
+      'type': type.name,
+      'balance': balance,
+    };
+  }
+
+  factory Contact.fromMap(Map<String, dynamic> map) {
+    return Contact(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      phone: map['phone'] ?? '',
+      type: ContactType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => ContactType.client,
+      ),
+      balance: (map['balance'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }
 
 class Expense {
@@ -252,4 +401,77 @@ class Expense {
     required this.category,
     required this.date,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'label': label,
+      'amount': amount,
+      'paymentMode': paymentMode.name,
+      'category': category,
+      'date': date.toIso8601String(),
+    };
+  }
+
+  factory Expense.fromMap(Map<String, dynamic> map) {
+    return Expense(
+      id: map['id'] ?? '',
+      label: map['label'] ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      paymentMode: PaymentMode.values.firstWhere(
+        (e) => e.name == map['paymentMode'],
+        orElse: () => PaymentMode.cash,
+      ),
+      category: map['category'] ?? '',
+      date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+    );
+  }
+}
+
+class LedgerEntry {
+  final String id;
+  final DateTime date;
+  final String accountCode;
+  final String accountName;
+  final String type; // 'Débit' or 'Crédit'
+  final double amount;
+  final String label;
+  final String paymentMode;
+
+  LedgerEntry({
+    required this.id,
+    required this.date,
+    required this.accountCode,
+    required this.accountName,
+    required this.type,
+    required this.amount,
+    required this.label,
+    required this.paymentMode,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'date': date.toIso8601String(),
+      'accountCode': accountCode,
+      'accountName': accountName,
+      'type': type,
+      'amount': amount,
+      'label': label,
+      'paymentMode': paymentMode,
+    };
+  }
+
+  factory LedgerEntry.fromMap(Map<String, dynamic> map) {
+    return LedgerEntry(
+      id: map['id'] ?? '',
+      date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+      accountCode: map['accountCode'] ?? '',
+      accountName: map['accountName'] ?? '',
+      type: map['type'] ?? '',
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      label: map['label'] ?? '',
+      paymentMode: map['paymentMode'] ?? '',
+    );
+  }
 }
