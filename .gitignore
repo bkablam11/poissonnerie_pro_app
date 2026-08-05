@@ -48,3 +48,4 @@ app.*.map.json
 .env
 .env.production
 *.pem
+flutter_sdk
