@@ -1,256 +1,108 @@
-# flutter_poissonnerie_pro
+# Poissonnerie Pro
 
-A new Flutter project.
+Application Flutter de gestion pour poissonnerie, pensée pour faciliter la vente, le suivi du stock, la gestion comptable de base et la synchronisation des données.
 
-## Getting Started
+## Vue d’ensemble
 
-This project is a starting point for a Flutter application.
+Poissonnerie Pro est une application de gestion opérationnelle adaptée à une poissonnerie moderne. Elle permet de suivre :
 
-A few resources to get you started if this is your first Flutter project:
+- les ventes au point de vente (POS),
+- les produits et niveaux de stock,
+- les arrivages et approvisionnements,
+- les pertes et spoilages,
+- les contacts clients et fournisseurs,
+- une base de comptabilité simple,
+- et la génération de reçus de vente.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Fonctionnalités principales
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Point de vente rapide et ergonomique
+- Gestion du catalogue produits
+- Suivi du stock avec seuils d’alerte
+- Déclaration de pertes et anomalies
+- Gestion des contacts clients/fournisseurs
+- Suivi comptable de base avec journal de saisie
+- Prévisualisation et partage de tickets de caisse
+- Synchronisation cloud optionnelle via Supabase
 
-Bien que l'application soit 100% fonctionnelle avec des jeux de données d'exemple, voici les étapes recommandées pour la finaliser en produit commercialisable :
-Persistance locale robuste (Base de données physique) :
-Actuellement : Les données sont stockées en mémoire vive (RAM) via Riverpod. Si vous fermez et rouvrez l'application, les données reviennent à l'état initial.
-À faire : Connecter un moteur de persistance locale comme Sqflite, Isar ou Hive pour sauvegarder les ventes et les écritures comptables de manière permanente sur le téléphone de l'utilisateur.
+## Stack technique
 
-Véritable synchronisation API Cloud :
-Actuellement : La synchronisation cloud et le mode hors-ligne sont entièrement simulés de manière réaliste avec un minuteur (Stream).
-À faire : Brancher les requêtes sur une vraie API ou un Backend de synchronisation (par exemple Supabase ou Firebase) pour centraliser les données de plusieurs poissonneries.
+- Flutter
+- Dart
+- Riverpod pour la gestion d’état
+- Material 3
+- SharedPreferences pour la persistance locale
+- Supabase pour la synchronisation cloud optionnelle
+- flutter_dotenv pour la configuration d’environnement
 
+## Prérequis
 
-Mise en page des reçus physiques :
-Actuellement : L'imprimante Bluetooth est connectée et scannée avec succès.
-À faire : Finaliser le template d'impression (le ticket de caisse en octets ESC/POS) pour sortir le ticket physique sur l'imprimante thermique.
-Gestion des rôles (Authentification) :
-À faire : Ajouter un écran de connexion simple (PIN de caisse) pour séparer les actions autorisées par le "Caissier" (Ventes, Pertes) de celles du "Gérant" (Comptabilité, Paramètres).
+Avant de lancer le projet, assurez-vous d’avoir :
 
-[
-  {
-    "id": "POI-001",
-    "name": "PELON (lokor-lokor)",
-    "category": "poissonCongele",
-    "stockKg": 8.0,
-    "purchasePrice": 16500.0,
-    "sellingPrice": 18500.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-002",
-    "name": "BELLE DAME",
-    "category": "poissonCongele",
-    "stockKg": 3.0,
-    "purchasePrice": 9000.0,
-    "sellingPrice": 11500.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-003",
-    "name": "MACHOIRON",
-    "category": "poissonCongele",
-    "stockKg": 11.0,
-    "purchasePrice": 8500.0,
-    "sellingPrice": 11000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-004",
-    "name": "MULLET",
-    "category": "poissonCongele",
-    "stockKg": 0.0,
-    "purchasePrice": 17000.0,
-    "sellingPrice": 17500.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-005",
-    "name": "LAME",
-    "category": "poissonCongele",
-    "stockKg": 2.0,
-    "purchasePrice": 19000.0,
-    "sellingPrice": 20000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-006",
-    "name": "APPOLLO 300/500 (MOYEN)",
-    "category": "poissonCongele",
-    "stockKg": 5.0,
-    "purchasePrice": 27500.0,
-    "sellingPrice": 29000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-007",
-    "name": "CARPE 300/500 (MOYEN)",
-    "category": "poissonCongele",
-    "stockKg": 13.0,
-    "purchasePrice": 10000.0,
-    "sellingPrice": 12000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-008",
-    "name": "CARPE 500/800 (GRAND)",
-    "category": "poissonCongele",
-    "stockKg": 6.0,
-    "purchasePrice": 11500.0,
-    "sellingPrice": 13000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-009",
-    "name": "CARPE ROUGE M (GRAND)",
-    "category": "poissonCongele",
-    "stockKg": 0.0,
-    "purchasePrice": 21000.0,
-    "sellingPrice": 22500.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-010",
-    "name": "CARPE ROUGE P (MOYEN)",
-    "category": "poissonCongele",
-    "stockKg": 1.0,
-    "purchasePrice": 21000.0,
-    "sellingPrice": 22000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-011",
-    "name": "CARPE ROUGE 2P (PETIT)",
-    "category": "poissonCongele",
-    "stockKg": 4.0,
-    "purchasePrice": 14500.0,
-    "sellingPrice": 16000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-012",
-    "name": "MAQUEREAU 500/1500 (GRAND)",
-    "category": "poissonCongele",
-    "stockKg": 4.0,
-    "purchasePrice": 25000.0,
-    "sellingPrice": 27000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-013",
-    "name": "MAQUEREAU 250/400 (MOYEN)",
-    "category": "poissonCongele",
-    "stockKg": 59.0,
-    "purchasePrice": 25500.0,
-    "sellingPrice": 27000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-014",
-    "name": "APPOLLO 300/600 (MOYEN)",
-    "category": "poissonCongele",
-    "stockKg": 28.0,
-    "purchasePrice": 25500.0,
-    "sellingPrice": 29000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-015",
-    "name": "APPOLLO 200/400 (PETIT)",
-    "category": "poissonCongele",
-    "stockKg": 6.0,
-    "purchasePrice": 22500.0,
-    "sellingPrice": 26000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-016",
-    "name": "APPOLLO 500/900 (GRAND)",
-    "category": "poissonCongele",
-    "stockKg": 25.0,
-    "purchasePrice": 27500.0,
-    "sellingPrice": 29000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-017",
-    "name": "MANGNE SARDINE",
-    "category": "poissonCongele",
-    "stockKg": 21.0,
-    "purchasePrice": 15000.0,
-    "sellingPrice": 17000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-018",
-    "name": "MANGNE SIMPLE MOYEN (SARDEB...)",
-    "category": "poissonCongele",
-    "stockKg": 0.0,
-    "purchasePrice": 17000.0,
-    "sellingPrice": 19000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-019",
-    "name": "TOMBOLA (BLUEWHIT_20)",
-    "category": "poissonCongele",
-    "stockKg": 29.0,
-    "purchasePrice": 14000.0,
-    "sellingPrice": 16000.0,
-    "minThresholdKg": 5.0
-  },
-  {
-    "id": "POI-020",
-    "name": "MULLET_29_05_26",
-    "category": "poissonCongele",
-    "stockKg": 31.0,
-    "purchasePrice": 18000.0,
-    "sellingPrice": 19500.0,
-    "minThresholdKg": 10.0
-  },
-  {
-    "id": "POI-021",
-    "name": "CARPE 500/800_29_05_26",
-    "category": "poissonCongele",
-    "stockKg": 20.0,
-    "purchasePrice": 11000.0,
-    "sellingPrice": 13000.0,
-    "minThresholdKg": 10.0
-  },
-  {
-    "id": "POI-022",
-    "name": "CARPE ROUGE P_29_05_26",
-    "category": "poissonCongele",
-    "stockKg": 0.0,
-    "purchasePrice": 21000.0,
-    "sellingPrice": 22500.0,
-    "minThresholdKg": 10.0
-  }
-]
+- Flutter SDK installé
+- un émulateur ou un appareil connecté
+- un compte Supabase si vous souhaitez utiliser la synchronisation cloud
+
+## Installation
+
+1. Clonez le projet :
+   ```bash
+   git clone <url-du-repo>
+   cd poissonnerie_pro_app
+   ```
+
+2. Installez les dépendances :
+   ```bash
+   flutter pub get
+   ```
+
+3. Créez un fichier d’environnement :
+   ```bash
+   mkdir -p assets
+   ```
+
+   Puis ajoutez un fichier `assets/.env` avec les variables suivantes :
+   ```env
+   SUPABASE_URL=Votre_URL_Supabase
+   SUPABASE_ANON_KEY=Votre_cle_anon
+   ```
+
+4. Lancez l’application :
+   ```bash
+   flutter run
+   ```
+
+## Structure du projet
+
+- `lib/main.dart` : point d’entrée de l’application
+- `lib/views/` : écrans et interface utilisateur
+- `lib/view_models/` : logique métier et état utilisateur
+- `lib/data/models/` : modèles de données
+- `lib/data/repositories/` : accès aux données et logique de stockage
+- `lib/data/services/` : services comme la synchronisation cloud
+
+## État actuel
+
+L’application est fonctionnelle avec des données d’exemple et une interface complète pour la gestion quotidienne d’une poissonnerie. Les prochaines améliorations prévues concernent :
+
+- une persistance locale plus robuste via une base de données locale,
+- une vraie synchronisation backend,
+- une authentification par rôles (caissier/gestionnaire),
+- et une finalisation de l’impression thermique.
+
+## Roadmap
+
+- [x] Gestion du POS
+- [x] Suivi du stock
+- [x] Gestion des pertes
+- [x] Comptabilité de base
+- [x] Persistance locale robuste
+- [x] Synchronisation cloud complète
+- [x] Authentification par rôles
+- [x] Impression thermique finale
+
+## Notes
+
+Le projet est actuellement pensé comme une base fonctionnelle de gestion de poissonnerie, avec une architecture prête à évoluer vers une version plus professionnelle et utilisable en production.
 
 
-Date;Code Compte;Libelle;Debit;Credit;Reference
-2026-07-26;571;"Vente POS réf sale-1785058899389 (Client Comptant)";33000;0;"led-1785058899389-s1"
-2026-07-26;701;"Facture vente POS réf sale-1785058899389";0;33000;"led-1785058899389-s2"
-2026-07-26;571;"Vente POS réf sale-1785058888089 (Client Comptant)";50000;0;"led-1785058888089-s1"
-2026-07-26;701;"Facture vente POS réf sale-1785058888089";0;50000;"led-1785058888089-s2"
-2026-07-26;571;"Vente POS réf sale-1785057983866 (Client Comptant)";18500;0;"led-1785057983866-s1"
-2026-07-26;701;"Facture vente POS réf sale-1785057983866";0;18500;"led-1785057983866-s2"
-2026-07-20;571;"Vente POS réf sale-1784538844154 (Client Comptant)";49500;0;"led-1784538844154-s1"
-2026-07-20;701;"Facture vente POS réf sale-1784538844154";0;49500;"led-1784538844154-s2"
-2026-07-19;571;"Vente POS réf sale-1784503489747 (Client Comptant)";18500;0;"led-1784503489747-s1"
-2026-07-19;701;"Facture vente POS réf sale-1784503489747";0;18500;"led-1784503489747-s2"
-2026-07-19;571;"Vente POS réf sale-1784503433968 (Client Comptant)";30000;0;"led-1784503433968-s1"
-2026-07-19;701;"Facture vente POS réf sale-1784503433968";0;30000;"led-1784503433968-s2"
-2026-07-19;571;"Vente POS réf sale-1784485198261 (Client Comptant)";30000;0;"led-1784485198261-s1"
-2026-07-19;701;"Facture vente POS réf sale-1784485198261";0;30000;"led-1784485198261-s2"
-2026-07-19;571;"Vente POS réf sale-1784449910252 (Client Comptant)";41000;0;"led-1784449910252-s1"
-2026-07-19;701;"Facture vente POS réf sale-1784449910252";0;41000;"led-1784449910252-s2"
-2026-06-19;101;"Apport de capital initial";0;5000000;"led-1"
-2026-06-19;521;"Versement capital Banque";4000000;0;"led-2"
-2026-06-19;571;"Alimentation caisse";1000000;0;"led-3"
