@@ -285,18 +285,25 @@ class ShopRepository {
         final updatedSales =
             _state.sales.map((s) => s.copyWith(isSynced: true)).toList();
 
-        // Optionnel : Vous pouvez aussi rafraîchir la liste locale des produits et contacts
-        // avec les données les plus récentes consolidées du cloud
+        // Rafraîchir toutes les données locales avec les données consolidées du cloud
         final latestProducts = await activeSyncService.fetchLatestProducts();
         final latestContacts = await activeSyncService.fetchLatestContacts();
+        final latestSales = await activeSyncService.fetchLatestSales();
+        final latestPurchases = await activeSyncService.fetchLatestPurchases();
+        final latestLosses = await activeSyncService.fetchLatestLosses();
+        final latestLedger = await activeSyncService.fetchLatestLedger();
 
         _state = _state.copyWith(
           isSyncing: false,
-          sales: updatedSales,
+          sales: latestSales.isNotEmpty ? latestSales : updatedSales,
           products:
               latestProducts.isNotEmpty ? latestProducts : _state.products,
           contacts:
               latestContacts.isNotEmpty ? latestContacts : _state.contacts,
+          purchases:
+              latestPurchases.isNotEmpty ? latestPurchases : _state.purchases,
+          losses: latestLosses.isNotEmpty ? latestLosses : _state.losses,
+          ledger: latestLedger.isNotEmpty ? latestLedger : _state.ledger,
           syncError: null,
         );
       } else {
@@ -698,312 +705,6 @@ class ShopRepository {
   }
 
   void _loadSeedData() {
-    final now = DateTime.now();
-
-    final seedProducts = [
-      Product(
-          id: 'POI-001',
-          name: 'PELON (lokor-lokor)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 9.0,
-          purchasePrice: 16500,
-          sellingPrice: 18500,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-002',
-          name: 'BELLE DAME',
-          category: ProductCategory.poissonCongele,
-          stockKg: 4.0,
-          purchasePrice: 9000,
-          sellingPrice: 11500,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-003',
-          name: 'MACHOIRON',
-          category: ProductCategory.poissonCongele,
-          stockKg: 12.0,
-          purchasePrice: 8500,
-          sellingPrice: 11000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-004',
-          name: 'MULLET',
-          category: ProductCategory.poissonCongele,
-          stockKg: 0.0,
-          purchasePrice: 17000,
-          sellingPrice: 17500,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-005',
-          name: 'LAME',
-          category: ProductCategory.poissonCongele,
-          stockKg: 2.0,
-          purchasePrice: 19000,
-          sellingPrice: 20000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-006',
-          name: 'APPOLLO 300/500 (MOYEN)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 5.0,
-          purchasePrice: 27500,
-          sellingPrice: 29000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-007',
-          name: 'CARPE 300/500 (MOYEN)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 13.0,
-          purchasePrice: 10000,
-          sellingPrice: 12000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-008',
-          name: 'CARPE 500/800 (GRAND)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 6.0,
-          purchasePrice: 11500,
-          sellingPrice: 13000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-009',
-          name: 'CARPE ROUGE M (GRAND)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 0.0,
-          purchasePrice: 21000,
-          sellingPrice: 22500,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-010',
-          name: 'CARPE ROUGE P (MOYEN)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 1.0,
-          purchasePrice: 21000,
-          sellingPrice: 22000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-011',
-          name: 'CARPE ROUGE 2P (PETIT)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 4.0,
-          purchasePrice: 14500,
-          sellingPrice: 16000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-012',
-          name: 'MAQUEREAU 500/1500 (GRAND)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 4.0,
-          purchasePrice: 25000,
-          sellingPrice: 27000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-013',
-          name: 'MAQUEREAU 250/400 (MOYEN)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 59.0,
-          purchasePrice: 25500,
-          sellingPrice: 27000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-014',
-          name: 'APPOLLO 300/600 (MOYEN)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 28.0,
-          purchasePrice: 25500,
-          sellingPrice: 29000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-015',
-          name: 'APPOLLO 200/400 (PETIT)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 6.0,
-          purchasePrice: 22500,
-          sellingPrice: 26000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-016',
-          name: 'APPOLLO 500/900 (GRAND)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 25.0,
-          purchasePrice: 27500,
-          sellingPrice: 29000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-017',
-          name: 'MANGNE SARDINE',
-          category: ProductCategory.poissonCongele,
-          stockKg: 21.0,
-          purchasePrice: 15000,
-          sellingPrice: 17000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-018',
-          name: 'MANGNE SIMPLE MOYEN (SARDEB...)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 0.0,
-          purchasePrice: 17000,
-          sellingPrice: 19000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-019',
-          name: 'TOMBOLA (BLUEWHIT_20)',
-          category: ProductCategory.poissonCongele,
-          stockKg: 29.0,
-          purchasePrice: 14000,
-          sellingPrice: 16000,
-          minThresholdKg: 5.0),
-      Product(
-          id: 'POI-020',
-          name: 'MULLET_29_05_26',
-          category: ProductCategory.poissonCongele,
-          stockKg: 31.0,
-          purchasePrice: 18000,
-          sellingPrice: 19500,
-          minThresholdKg: 10.0),
-      Product(
-          id: 'POI-021',
-          name: 'CARPE 500/800_29_05_26',
-          category: ProductCategory.poissonCongele,
-          stockKg: 20.0,
-          purchasePrice: 11000,
-          sellingPrice: 13000,
-          minThresholdKg: 10.0),
-      Product(
-          id: 'POI-022',
-          name: 'CARPE ROUGE P_29_05_26',
-          category: ProductCategory.poissonCongele,
-          stockKg: 0.0,
-          purchasePrice: 21000,
-          sellingPrice: 22500,
-          minThresholdKg: 10.0),
-    ];
-
-    final seedContacts = [
-      Contact(
-          id: 'FOU-001',
-          name: 'SONAL',
-          phone: '07 07 20 33 22 (M. KOUAKOU)',
-          type: ContactType.fournisseur,
-          balance: 0.0),
-      Contact(
-          id: 'CLI-001',
-          name: 'client1',
-          phone: '0748782205',
-          type: ContactType.client,
-          balance: 0.0),
-      Contact(
-          id: 'CLI-002',
-          name: 'Mme Adeline',
-          phone: '05 45 42 01 63',
-          type: ContactType.client,
-          balance: 0.0),
-      Contact(
-          id: 'CLI-003',
-          name: 'Mme Elisa',
-          phone: '05 96 92 43 28',
-          type: ContactType.client,
-          balance: 0.0),
-      Contact(
-          id: 'CLI-004',
-          name: 'Mme Safiatou',
-          phone: '05 64 69 46 72',
-          type: ContactType.client,
-          balance: 0.0),
-      Contact(
-          id: 'CLI-005',
-          name: 'Mme CHANTAL',
-          phone: '05 04 01 71 35',
-          type: ContactType.client,
-          balance: 0.0),
-      Contact(
-          id: 'CLI-006',
-          name: 'MME ADELE',
-          phone: '01 53 04 60',
-          type: ContactType.client,
-          balance: 0.0),
-      Contact(
-          id: 'CLI-007',
-          name: 'TUO NAWA',
-          phone: '07 10 39 36 09',
-          type: ContactType.client,
-          balance: 0.0),
-      Contact(
-          id: 'CLI-008',
-          name: 'M. FULGENCE',
-          phone: '07 68 47 18 25',
-          type: ContactType.client,
-          balance: 0.0),
-    ];
-
-    final seedSales = [
-      Sale(
-        id: 'sale-1',
-        customerName: 'client1',
-        items: [
-          SaleItem(
-              productId: 'POI-001',
-              productName: 'PELON (lokor-lokor)',
-              quantityKg: 2,
-              unitPrice: 18500),
-          SaleItem(
-              productId: 'POI-002',
-              productName: 'BELLE DAME',
-              quantityKg: 1,
-              unitPrice: 11500),
-        ],
-        totalAmount: 48500,
-        paymentMode: PaymentMode.cash,
-        date: now.subtract(const Duration(days: 3)),
-        isSynced: true,
-      ),
-      Sale(
-        id: 'sale-2',
-        customerName: 'Mme Adeline',
-        items: [
-          SaleItem(
-              productId: 'POI-003',
-              productName: 'MACHOIRON',
-              quantityKg: 3,
-              unitPrice: 11000),
-        ],
-        totalAmount: 33000,
-        paymentMode: PaymentMode.cash,
-        date: now.subtract(const Duration(days: 2)),
-        isSynced: true,
-      ),
-    ];
-
-    final seedLedger = [
-      LedgerEntry(
-          id: 'led-1',
-          date: now.subtract(const Duration(days: 30)),
-          accountCode: '101',
-          accountName: 'Capital',
-          type: 'Crédit',
-          amount: 5000000,
-          label: 'Apport de capital initial',
-          paymentMode: 'Autre'),
-      LedgerEntry(
-          id: 'led-2',
-          date: now.subtract(const Duration(days: 30)),
-          accountCode: '521',
-          accountName: 'Banque',
-          type: 'Débit',
-          amount: 4000000,
-          label: 'Versement capital Banque',
-          paymentMode: 'Banque'),
-      LedgerEntry(
-          id: 'led-3',
-          date: now.subtract(const Duration(days: 30)),
-          accountCode: '571',
-          accountName: 'Caisse',
-          type: 'Débit',
-          amount: 1000000,
-          label: 'Alimentation caisse',
-          paymentMode: 'Espèces'),
-    ];
-
     final seedSettings = {
       'shopName': 'Poissonnerie Pro',
       'address': 'Gros de Bouaké, Côte d’Ivoire',
@@ -1017,12 +718,12 @@ class ShopRepository {
     };
 
     _state = ShopState(
-      products: seedProducts,
-      sales: seedSales,
+      products: [],
+      sales: [],
       purchases: [],
       losses: [],
-      contacts: seedContacts,
-      ledger: seedLedger,
+      contacts: [],
+      ledger: [],
       settings: seedSettings,
     );
     _stateController.add(_state);
@@ -1040,6 +741,28 @@ class ShopRepository {
       await prefs.remove('shop_ledger');
     } catch (e) {
       print("Error resetting prefs: $e");
+    }
+
+    // Si un serveur Cloud/Supabase est configuré, effacer également les tables distantes
+    try {
+      String url = _state.settings['supabaseUrl'] ?? '';
+      String anonKey = _state.settings['supabaseAnonKey'] ?? '';
+      if (url.isEmpty || anonKey.isEmpty) {
+        url = dotenv.env['SUPABASE_URL'] ?? '';
+        anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+        if (url == 'https://VOTRE_PROJET_ID.supabase.co' ||
+            anonKey == 'VOTRE_CLE_API_ANONYME') {
+          url = '';
+          anonKey = '';
+        }
+      }
+      if (url.isNotEmpty && anonKey.isNotEmpty) {
+        final CloudSyncService syncService =
+            SupabaseSyncService(url: url, anonKey: anonKey);
+        await syncService.clearAllRemoteData();
+      }
+    } catch (e) {
+      print("Erreur vidage Supabase lors du reset: $e");
     }
 
     _state = ShopState(

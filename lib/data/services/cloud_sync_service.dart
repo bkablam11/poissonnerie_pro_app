@@ -28,6 +28,21 @@ abstract class CloudSyncService {
 
   /// Récupère la liste de tous les contacts enregistrés sur le serveur central
   Future<List<Contact>> fetchLatestContacts();
+
+  /// Récupère la liste de toutes les ventes depuis le cloud
+  Future<List<Sale>> fetchLatestSales();
+
+  /// Récupère la liste de tous les approvisionnements (achats) depuis le cloud
+  Future<List<Arrival>> fetchLatestPurchases();
+
+  /// Récupère la liste de toutes les pertes depuis le cloud
+  Future<List<Loss>> fetchLatestLosses();
+
+  /// Récupère toutes les écritures du grand livre comptable depuis le cloud
+  Future<List<LedgerEntry>> fetchLatestLedger();
+
+  /// Efface toutes les données sur le serveur cloud (Supabase)
+  Future<bool> clearAllRemoteData();
 }
 
 // ============================================================================
@@ -62,13 +77,15 @@ class SupabaseSyncService implements CloudSyncService {
         // 2. Nettoyer et réinsérer les éléments pour éviter les doublons
         await supabaseClient.from('sale_items').delete().eq('sale_id', sale.id);
 
-        final itemsData = sale.items.map((item) => {
-          'sale_id': sale.id,
-          'product_id': item.productId,
-          'product_name': item.productName,
-          'quantity_kg': item.quantityKg,
-          'unit_price': item.unitPrice,
-        }).toList();
+        final itemsData = sale.items
+            .map((item) => {
+                  'sale_id': sale.id,
+                  'product_id': item.productId,
+                  'product_name': item.productName,
+                  'quantity_kg': item.quantityKg,
+                  'unit_price': item.unitPrice,
+                })
+            .toList();
 
         if (itemsData.isNotEmpty) {
           await supabaseClient.from('sale_items').insert(itemsData);
@@ -85,15 +102,17 @@ class SupabaseSyncService implements CloudSyncService {
   Future<bool> pushProducts(List<Product> products) async {
     try {
       final supabaseClient = client;
-      final data = products.map((p) => {
-        'id': p.id,
-        'name': p.name,
-        'category': p.category.name,
-        'stock_kg': p.stockKg,
-        'purchase_price': p.purchasePrice,
-        'selling_price': p.sellingPrice,
-        'min_threshold_kg': p.minThresholdKg,
-      }).toList();
+      final data = products
+          .map((p) => {
+                'id': p.id,
+                'name': p.name,
+                'category': p.category.name,
+                'stock_kg': p.stockKg,
+                'purchase_price': p.purchasePrice,
+                'selling_price': p.sellingPrice,
+                'min_threshold_kg': p.minThresholdKg,
+              })
+          .toList();
       await supabaseClient.from('products').upsert(data);
       return true;
     } catch (e) {
@@ -106,15 +125,17 @@ class SupabaseSyncService implements CloudSyncService {
   Future<bool> pushPurchases(List<Arrival> purchases) async {
     try {
       final supabaseClient = client;
-      final data = purchases.map((p) => {
-        'id': p.id,
-        'supplier_name': p.supplierName,
-        'fish_name': p.fishName,
-        'quantity_kg': p.quantityKg,
-        'unit_purchase_cost': p.unitPurchaseCost,
-        'suggested_selling_price': p.suggestedSellingPrice,
-        'date': p.date.toIso8601String(),
-      }).toList();
+      final data = purchases
+          .map((p) => {
+                'id': p.id,
+                'supplier_name': p.supplierName,
+                'fish_name': p.fishName,
+                'quantity_kg': p.quantityKg,
+                'unit_purchase_cost': p.unitPurchaseCost,
+                'suggested_selling_price': p.suggestedSellingPrice,
+                'date': p.date.toIso8601String(),
+              })
+          .toList();
       await supabaseClient.from('purchases').upsert(data);
       return true;
     } catch (e) {
@@ -127,15 +148,17 @@ class SupabaseSyncService implements CloudSyncService {
   Future<bool> pushLosses(List<Loss> losses) async {
     try {
       final supabaseClient = client;
-      final data = losses.map((l) => {
-        'id': l.id,
-        'product_id': l.productId,
-        'product_name': l.productName,
-        'quantity_kg': l.quantityKg,
-        'unit_cost': l.unitCost,
-        'reason': l.reason.name,
-        'date': l.date.toIso8601String(),
-      }).toList();
+      final data = losses
+          .map((l) => {
+                'id': l.id,
+                'product_id': l.productId,
+                'product_name': l.productName,
+                'quantity_kg': l.quantityKg,
+                'unit_cost': l.unitCost,
+                'reason': l.reason.name,
+                'date': l.date.toIso8601String(),
+              })
+          .toList();
       await supabaseClient.from('losses').upsert(data);
       return true;
     } catch (e) {
@@ -148,13 +171,15 @@ class SupabaseSyncService implements CloudSyncService {
   Future<bool> pushContacts(List<Contact> contacts) async {
     try {
       final supabaseClient = client;
-      final data = contacts.map((c) => {
-        'id': c.id,
-        'name': c.name,
-        'phone': c.phone,
-        'type': c.type.name,
-        'balance': c.balance,
-      }).toList();
+      final data = contacts
+          .map((c) => {
+                'id': c.id,
+                'name': c.name,
+                'phone': c.phone,
+                'type': c.type.name,
+                'balance': c.balance,
+              })
+          .toList();
       await supabaseClient.from('contacts').upsert(data);
       return true;
     } catch (e) {
@@ -167,16 +192,18 @@ class SupabaseSyncService implements CloudSyncService {
   Future<bool> pushLedger(List<LedgerEntry> ledger) async {
     try {
       final supabaseClient = client;
-      final data = ledger.map((l) => {
-        'id': l.id,
-        'date': l.date.toIso8601String(),
-        'account_code': l.accountCode,
-        'account_name': l.accountName,
-        'type': l.type,
-        'amount': l.amount,
-        'label': l.label,
-        'payment_mode': l.paymentMode,
-      }).toList();
+      final data = ledger
+          .map((l) => {
+                'id': l.id,
+                'date': l.date.toIso8601String(),
+                'account_code': l.accountCode,
+                'account_name': l.accountName,
+                'type': l.type,
+                'amount': l.amount,
+                'label': l.label,
+                'payment_mode': l.paymentMode,
+              })
+          .toList();
       await supabaseClient.from('ledger').upsert(data);
       return true;
     } catch (e) {
@@ -230,6 +257,137 @@ class SupabaseSyncService implements CloudSyncService {
     } catch (e) {
       print("Erreur de chargement Supabase (Contacts) : $e");
       return [];
+    }
+  }
+
+  @override
+  Future<List<Sale>> fetchLatestSales() async {
+    try {
+      final supabaseClient = client;
+      final salesResponse = await supabaseClient.from('sales').select();
+      final itemsResponse = await supabaseClient.from('sale_items').select();
+
+      final List<dynamic> salesList = salesResponse as List;
+      final List<dynamic> itemsList = itemsResponse as List;
+
+      return salesList.map((sMap) {
+        final saleId = sMap['id'] ?? '';
+        final saleItems = itemsList
+            .where((iMap) => iMap['sale_id'] == saleId)
+            .map((iMap) => SaleItem(
+                  productId: iMap['product_id'] ?? '',
+                  productName: iMap['product_name'] ?? '',
+                  quantityKg: (iMap['quantity_kg'] as num?)?.toDouble() ?? 0.0,
+                  unitPrice: (iMap['unit_price'] as num?)?.toDouble() ?? 0.0,
+                ))
+            .toList();
+
+        return Sale(
+          id: saleId,
+          customerName: sMap['customer_name'],
+          items: saleItems,
+          totalAmount: (sMap['total_amount'] as num?)?.toDouble() ?? 0.0,
+          paymentMode: PaymentMode.values.firstWhere(
+            (e) => e.name == sMap['payment_mode'],
+            orElse: () => PaymentMode.cash,
+          ),
+          date: DateTime.tryParse(sMap['date'] ?? '') ?? DateTime.now(),
+          isSynced: true,
+        );
+      }).toList();
+    } catch (e) {
+      print("Erreur de chargement Supabase (Sales) : $e");
+      return [];
+    }
+  }
+
+  @override
+  Future<List<Arrival>> fetchLatestPurchases() async {
+    try {
+      final supabaseClient = client;
+      final response = await supabaseClient.from('purchases').select();
+      return (response as List).map((map) {
+        return Arrival(
+          id: map['id'] ?? '',
+          supplierName: map['supplier_name'] ?? '',
+          fishName: map['fish_name'] ?? '',
+          quantityKg: (map['quantity_kg'] as num?)?.toDouble() ?? 0.0,
+          unitPurchaseCost:
+              (map['unit_purchase_cost'] as num?)?.toDouble() ?? 0.0,
+          suggestedSellingPrice:
+              (map['suggested_selling_price'] as num?)?.toDouble() ?? 0.0,
+          date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+        );
+      }).toList();
+    } catch (e) {
+      print("Erreur de chargement Supabase (Purchases) : $e");
+      return [];
+    }
+  }
+
+  @override
+  Future<List<Loss>> fetchLatestLosses() async {
+    try {
+      final supabaseClient = client;
+      final response = await supabaseClient.from('losses').select();
+      return (response as List).map((map) {
+        return Loss(
+          id: map['id'] ?? '',
+          productId: map['product_id'] ?? '',
+          productName: map['product_name'] ?? '',
+          quantityKg: (map['quantity_kg'] as num?)?.toDouble() ?? 0.0,
+          unitCost: (map['unit_cost'] as num?)?.toDouble() ?? 0.0,
+          reason: LossReason.values.firstWhere(
+            (e) => e.name == map['reason'],
+            orElse: () => LossReason.avarie,
+          ),
+          date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+        );
+      }).toList();
+    } catch (e) {
+      print("Erreur de chargement Supabase (Losses) : $e");
+      return [];
+    }
+  }
+
+  @override
+  Future<List<LedgerEntry>> fetchLatestLedger() async {
+    try {
+      final supabaseClient = client;
+      final response = await supabaseClient.from('ledger').select();
+      return (response as List).map((map) {
+        return LedgerEntry(
+          id: map['id'] ?? '',
+          date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
+          accountCode: map['account_code'] ?? '',
+          accountName: map['account_name'] ?? '',
+          type: map['type'] ?? 'Débit',
+          amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+          label: map['label'] ?? '',
+          paymentMode: map['payment_mode'] ?? 'Autre',
+        );
+      }).toList();
+    } catch (e) {
+      print("Erreur de chargement Supabase (Ledger) : $e");
+      return [];
+    }
+  }
+
+  @override
+  Future<bool> clearAllRemoteData() async {
+    try {
+      final supabaseClient = client;
+      await supabaseClient.from('sale_items').delete().neq('id', -1);
+      await supabaseClient.from('sales').delete().neq('id', '___empty___');
+      await supabaseClient.from('purchases').delete().neq('id', '___empty___');
+      await supabaseClient.from('losses').delete().neq('id', '___empty___');
+      await supabaseClient.from('products').delete().neq('id', '___empty___');
+      await supabaseClient.from('contacts').delete().neq('id', '___empty___');
+      await supabaseClient.from('ledger').delete().neq('id', '___empty___');
+      return true;
+    } catch (e) {
+      print("Erreur de nettoyage Supabase : $e");
+      return false;
     }
   }
 }
@@ -410,5 +568,35 @@ class MockCloudSyncService implements CloudSyncService {
   Future<List<Contact>> fetchLatestContacts() async {
     await Future.delayed(const Duration(milliseconds: 1000));
     return [];
+  }
+
+  @override
+  Future<List<Sale>> fetchLatestSales() async {
+    await Future.delayed(const Duration(milliseconds: 1000));
+    return [];
+  }
+
+  @override
+  Future<List<Arrival>> fetchLatestPurchases() async {
+    await Future.delayed(const Duration(milliseconds: 1000));
+    return [];
+  }
+
+  @override
+  Future<List<Loss>> fetchLatestLosses() async {
+    await Future.delayed(const Duration(milliseconds: 1000));
+    return [];
+  }
+
+  @override
+  Future<List<LedgerEntry>> fetchLatestLedger() async {
+    await Future.delayed(const Duration(milliseconds: 1000));
+    return [];
+  }
+
+  @override
+  Future<bool> clearAllRemoteData() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return true;
   }
 }
